@@ -16,7 +16,7 @@ dirs:
 	mkdir -p $(DIROBJ) $(DIRLIB)
 
 helloworld: $(DIROBJ)helloworld.o
-	$(CC) -shared -o lib/$@ $^
+	$(CC) -shared -o $(DIRLIB)$@ $^
 	
 $(DIROBJ)%.o: $(DIRSRC)%.c
 	$(CC) -c $^ -o $@
