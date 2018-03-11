@@ -1,7 +1,7 @@
 # Programación Declarativa
 Caso de estudio y prácticas
 ## Caso de estudio
-Crear una libreria para Prolog en C para manipular matrices
+Escribir procedimientos en lenguaje C para manipular matrices y crear una librería que pueda integrarse en un programa SWI-Prolog.
 ### Notas
 
 - Los tipos de retorno tienen que ser tipos de prolog (Por eso se usa PL_unify_atom_chars(u, "HelloWorld!");)
