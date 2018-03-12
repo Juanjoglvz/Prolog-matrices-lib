@@ -1,0 +1,10 @@
+Ejercicio1:
+
+c)	Relaciones directamente recursivas:
+		-ascendiente(X, Z)
+		-descendiente
+		
+	Relaciones indirectamente recursivas(una de las clausulas en el cuerpo es recursiva):
+		No hay ninguna.
+		
+d)	Todos los predicados definidos son inversibles.
