@@ -4,38 +4,26 @@
 #include <ctype.h>
 #include <stdio.h>
 
+#define NULLTERM 0
+
 int printlist(term_t list);
 
 foreign_t
 pl_printlist(term_t list)
 {
-	FUNCTOR_dot2;
 	if (!PL_is_list(list))
 	{
 		printf("Input parameter is not a list!\n");
 		PL_fail;
 	}
 	
-	printf("Retval is: %d\n", printlist(list));
+	int retval = printlist(list);
+	printf("\nRetval is: %d\n", retval);
 	
-	PL_succeed;
-}
-
-foreign_t
-pl_write_atoms(term_t l)
-{ term_t head = PL_new_term_ref();   /* the elements */
-  term_t list = PL_copy_term_ref(l); /* copy (we modify list) */
-
-  while( PL_get_list(list, head, list) )
-  { char *s;
-
-    if ( PL_get_atom_chars(head, &s) )
-      printf("%s\n", s);
-    else
-      PL_fail;
-  }
-
-  return PL_get_nil(list);            /* test end for [] */
+	if (retval)
+		PL_fail;
+	else
+		PL_succeed;
 }
 
 int printlist(term_t list)
@@ -47,55 +35,56 @@ int printlist(term_t list)
 		return -1;
 	}
 
-	term_t head = PL_new_term_ref();
-	term_t tail = PL_new_term_ref();
-
-	if (!PL_get_list(list, head, tail))
+	long unsigned int length;
+	if (!PL_skip_list(list, NULLTERM, &length))
 	{
-		printf("Error getting the list: %d\n", error);
+		printf("Error getting the length of the list");
 		return -2;
 	}
 
+	term_t head = PL_new_term_ref();
+	term_t tail = PL_copy_term_ref(list);
+
 	printf("[");
-	while (!PL_get_nil(tail))
+	int i;
+	for (i = 0; i < length; i++)
 	{
-		if (PL_is_list(head))
-		{
-			printlist(head); 
-			
-			if (PL_get_list(tail, head, tail))
-			{
-				printf("Error getting the list\n");
-				return -6;
-			}
-			continue;
-		}
-		if (!PL_is_integer(head))
-		{
-			printf("Element is not an integer\n");
-			return -3;
-		}
-		int val;
-		if (PL_get_integer(head, &val))
-		{
-			printf("Error getting the integer");
-			return -4;
-		}
-		printf("%d ", val);
-
-
-		if (PL_get_list(tail, head, tail))
+		if (!PL_get_list(tail, head, tail))
 		{
 			printf("Error getting the list\n");
-			return -5;
+			return -3;
+		}
+		// Recursively call this function to print nested lists
+		if (PL_is_list(head))
+		{
+			int error = printlist(head);
+			if (error)
+				return error;
+			printf(", ");
+		}
+		else if (!PL_is_integer(head))
+		{
+			printf("Element is not an integer\n");
+			return -4;
+		}
+		else
+		{
+			int val;
+			if (!PL_get_integer(head, &val))
+			{
+				printf("Error getting the integer");
+				return -5;
+			}
+			printf("%d, ", val);
 		}
 	}
+	printf("\b\b]");
+	return 0;
 }
 
 
 install_t
-install_helloworld()
+install()
 { 
 	PL_register_foreign("printit", 1, pl_printlist, 0);
-	PL_register_foreign("pl_write_atoms", 1, pl_write_atoms, 0);
 }
