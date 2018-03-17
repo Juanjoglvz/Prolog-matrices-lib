@@ -1,34 +1,12 @@
-#include "/usr/lib/swi-prolog/include/SWI-Prolog.h"
+#include <SWI-Prolog.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
-
-#define NULLTERM 0
-
-int printlist(term_t list);
-
-foreign_t
-pl_printlist(term_t list)
-{
-	if (!PL_is_list(list))
-	{
-		printf("Input parameter is not a list!\n");
-		PL_fail;
-	}
-	
-	int retval = printlist(list);
-	printf("\nRetval is: %d\n", retval);
-	
-	if (retval)
-		PL_fail;
-	else
-		PL_succeed;
-}
+#include <matlog.h>
 
 int printlist(term_t list)
 {
-	int error = 0;
 	if (!PL_is_list(list))
 	{
 		printf("Term is not a list\n");
@@ -82,9 +60,63 @@ int printlist(term_t list)
 	return 0;
 }
 
+foreign_t
+pl_printlist(term_t list)
+{
+	if (!PL_is_list(list))
+	{
+		printf("Input parameter is not a list!\n");
+		PL_fail;
+	}
+	
+	int retval = printlist(list);
+	printf("\nRetval is: %d\n", retval);
+	
+	if (retval)
+		PL_fail;
+	else
+		PL_succeed;
+}
+
+foreign_t
+pl_is_matrix(term_t list)
+{
+	size_t dimensions[2];
+	int res = is_matrix(list, dimensions);
+	if (res)
+	{
+		DEBUG_PRINT("Number of rows: %lu  Number of columns: %lu\n", dimensions[0], dimensions[1]);
+	}
+	return res == 0 ? 0 : 1;
+}
+
+foreign_t
+pl_sum_matrix(term_t list)
+{
+	struct Matrix_t* matrix = (struct Matrix_t*) calloc(1, sizeof(struct Matrix_t));
+	if (!matrix)
+	{
+		DEBUG_PRINT("Cannot allocate memory for the matrix\n");
+		PL_fail;
+	}
+
+	int res = list_to_matrix(list, matrix);
+	if (!res)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		PL_fail;
+	}
+
+	double sum = sum_matrix(matrix);
+
+	DEBUG_PRINT("Sum of elements of matrix is: %f\n", sum);
+	PL_succeed;
+}
 
 install_t
 install()
-{ 
+{
 	PL_register_foreign("printit", 1, pl_printlist, 0);
+	PL_register_foreign("ismatrix", 1, pl_is_matrix, 0);
+	PL_register_foreign("summatrix", 1, pl_sum_matrix, 0);
 }
