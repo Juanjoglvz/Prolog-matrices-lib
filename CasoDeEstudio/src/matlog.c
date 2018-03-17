@@ -104,6 +104,19 @@ int list_to_matrix(term_t list, struct Matrix_t* matrix)
     size_t rows = *(matrix->size);
     size_t columns = *(matrix->size + 1);
     // Allocate space for the matrix data
+
+    double** rptr = (double**) calloc(rows, sizeof(double*));
+    if (!rptr)
+    {
+        DEBUG_PRINT("Tried to allocate memory, but it didnt succeed, aborting\n");
+        return 0;
+    }
+    else
+    {
+        matrix->rows = rptr;
+    }
+
+
     for (int i = 0; i < rows; i++)
     {
         double* ptr = (double*) calloc(columns, sizeof(double));
