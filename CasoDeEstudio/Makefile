@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 # -*- mode:makefile -*-
 
-CFLAGS :=
+CCFLAGS := -std=c99 -Wall -pedantic
 LDLIBS :=
 CC := swipl-ld
 
@@ -12,15 +12,20 @@ DIRSRC := src/
 
 all: dirs helloworld
 
+debug: CCFLAGS += -DDEBUG -g
+debug: all
+
 dirs:
 	mkdir -p $(DIROBJ) $(DIRLIB)
 
-helloworld: $(DIROBJ)helloworld.o
-	$(CC) -shared -o $(DIRLIB)$@ $^
+helloworld: $(DIROBJ)helloworld.o $(DIROBJ)matlog.o $(DIROBJ)debug.o
+	$(CC) -shared -o $@ $^
 	
 $(DIROBJ)%.o: $(DIRSRC)%.c
-	$(CC) -c $^ -o $@
+	$(CC) $(CCFLAGS) -I$(DIRHEA) -c $^ -o $@
 	
 	
 clean: 
-	rm -rf *~ core $(DIROBJ) $(DIRLIB)
+	-$(RM) *~
+	-$(RM) -r ./lib
+	-$(RM) -r ./obj
