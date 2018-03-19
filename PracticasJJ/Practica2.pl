@@ -9,7 +9,7 @@ descomponer(N, A, B) :- between(0, N, A), between(0, N, B), par(A), par(B), N is
 
 descomponerSinPares(N, A, B) :- between(0, N, A), between(0, N, B), N is A + B.
 numBrandreth(A, C) :- between(32, 99, A), C is A * A,
-					numToList(C, [X|[Y|[]]]),
+					numToList(C, [X|[Y]]),
 					descomponerSinPares(A, X, Y).
 					
 
