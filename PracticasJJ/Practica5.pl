@@ -41,5 +41,9 @@ fib1(N,F) :- N>2, H1 is N - 1, H2 is N - 2,
 			fib1(H1,N1), fib1(H2, N2),
 			F is N1 + N2.
 			
-fib2(N,F) :- 
+fib2(N,F) :- fib2(N,F,A).
+fib2(0, 0, 0).
+fib2(1, 1, 1).
+fib2(2, 1, 1).
+fib2(N, F, Fn_1) :-N>2, N1 is N - 1, fib2(N1, Fn_1, Fn_2), F is Fn_1 + Fn_2.
 
