@@ -10,6 +10,7 @@
 */
 int is_matrix(term_t list, size_t* dimensions)
 {
+    size_t elements = 0;
     size_t rows = 0;
     size_t columns = 0;
     int row_matrix = 0; // Tells whether the matrix is a row matrix
@@ -21,7 +22,7 @@ int is_matrix(term_t list, size_t* dimensions)
     }
     else
     {
-        if (!PL_skip_list(list, NULLTERM, &rows))
+        if (!PL_skip_list(list, NULLTERM, &elements))
         {
             DEBUG_PRINT("Error while getting the list length\n");
             return 0;
@@ -31,7 +32,7 @@ int is_matrix(term_t list, size_t* dimensions)
             term_t head = PL_new_term_ref();
 	        term_t tail = PL_copy_term_ref(list);
 
-            for (int i = 0; i < rows; i++)
+            for (int i = 0; i < elements; i++)
             {
                 if (!PL_get_list(tail, head, tail))
                 {
@@ -41,6 +42,7 @@ int is_matrix(term_t list, size_t* dimensions)
 
                 if (PL_is_list(head))
                 {
+                    rows++;
                     // Cannot have a row matrix with nested lists 
                     // (that would be multiple rows)
                     if (row_matrix) 
@@ -49,22 +51,34 @@ int is_matrix(term_t list, size_t* dimensions)
                         return 0;
                     }
 
-                    size_t cols = (size_t) is_matrix(head, NULL);
+                    size_t dims[2] = {0};
+                    size_t res = (size_t) is_matrix(head, dims);
+
+                    if (res == 0)
+                    {
+                        DEBUG_PRINT("Error checking the row matrices\n");
+                        return 0;
+                    }
+
+                    size_t cols = dims[1];
+                    
                     if (columns == 0)
                     {
                         columns = cols;
                     }
 
-                    if (cols == 0 || cols != columns)
+                    if (cols != columns)
                     {
                         DEBUG_PRINT("Different number of columns, %lu vs %lu\n", cols, columns);
                         return 0;
                     }
+
                 }
                 else // Row Matrix
                 {
                     if (PL_is_number(head))
                     {
+                        rows = 1;
                         row_matrix = 1;
                         columns++;
                     }
@@ -146,7 +160,7 @@ int list_to_matrix(term_t list, struct Matrix_t* matrix)
 
         double* row = *(matrix->rows + i);
         int res = 0;
-        if (rows > 1)
+        if (rows == 1) // Row matrix
         {
             res = list_to_row(list, columns, row);
         }
@@ -220,7 +234,7 @@ double sum_matrix(struct Matrix_t* matrix)
     {
         DEBUG_PRINT("Matrix pointer is null\n");
         return 0;
-    }
+    }   
     size_t rows = *(matrix->size);
     size_t columns = *(matrix->size + 1);
 

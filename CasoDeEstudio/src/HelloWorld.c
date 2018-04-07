@@ -91,7 +91,31 @@ pl_is_matrix(term_t list)
 }
 
 foreign_t
-pl_sum_matrix(term_t list)
+pl_matrix_size(term_t list, term_t row, term_t column)
+{
+	size_t dimensions[2] = {0};
+
+	int res = is_matrix(list, dimensions);
+
+	if (!res)
+	{
+		PL_fail;
+	}
+	else
+	{
+		term_t tRow = PL_new_term_ref();
+		term_t tColumn = PL_new_term_ref();
+
+		PL_put_integer(tRow, dimensions[0]);
+		PL_put_integer(tColumn, dimensions[1]);
+
+		PL_unify(row, tRow);
+		return PL_unify(column, tColumn);
+	}
+}
+
+foreign_t
+pl_sum_matrix(term_t list, term_t out)
 {
 	struct Matrix_t* matrix = (struct Matrix_t*) calloc(1, sizeof(struct Matrix_t));
 	if (!matrix)
@@ -109,8 +133,9 @@ pl_sum_matrix(term_t list)
 
 	double sum = sum_matrix(matrix);
 
-	DEBUG_PRINT("Sum of elements of matrix is: %f\n", sum);
-	PL_succeed;
+	term_t result = PL_new_term_ref();
+	PL_put_float(result, sum);
+	return PL_unify(out, result);
 }
 
 install_t
@@ -118,5 +143,6 @@ install()
 {
 	PL_register_foreign("printit", 1, pl_printlist, 0);
 	PL_register_foreign("ismatrix", 1, pl_is_matrix, 0);
-	PL_register_foreign("summatrix", 1, pl_sum_matrix, 0);
+	PL_register_foreign("summatrix", 2, pl_sum_matrix, 0);
+	PL_register_foreign("matrix_size", 3, pl_matrix_size, 0);
 }
