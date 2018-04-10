@@ -1,3 +1,7 @@
+#ifndef __TYPES_H__
+#define __TYPES_H__
+
+
 #include <stddef.h>
 
 #define NULLTERM (0)
@@ -8,3 +12,5 @@ struct Matrix_t
 
     double** rows;
 };
+
+#endif

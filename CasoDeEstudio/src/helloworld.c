@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <matlog.h>
 
-int printlist(term_t list)
+/*int printlist(term_t list)
 {
 	if (!PL_is_list(list))
 	{
@@ -136,13 +136,122 @@ pl_sum_matrix(term_t list, term_t out)
 	term_t result = PL_new_term_ref();
 	PL_put_float(result, sum);
 	return PL_unify(out, result);
+}*/
+
+foreign_t
+pl_add_matrices(term_t m1, term_t m2, term_t result)
+{
+	struct Matrix_t matrix1;
+	struct Matrix_t matrix2;
+	struct Matrix_t* mresult = NULL;
+
+	int res = list_to_matrix(m1, &matrix1);
+	if (!res)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		PL_fail;
+	}
+
+	res = list_to_matrix(m2, &matrix2);
+	if (!res)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		PL_fail;
+	}
+
+
+	struct Matrix_t* ptr = (struct Matrix_t*) calloc(1, sizeof(struct Matrix_t));
+    if (!ptr)
+    {
+        DEBUG_PRINT("Couldn't allocate memory for the new matrix\n");
+        return 0;
+    }
+    else
+    {
+        mresult = ptr;
+    }
+
+	if (!copy_matrix(&matrix1, mresult))
+	{
+		DEBUG_PRINT("Cannot copy matrix\n");
+		PL_fail;
+	}
+	
+	if (!add_matrices(&matrix1, &matrix2, mresult))
+	{
+		DEBUG_PRINT("Cannot add matrices\n");
+		PL_fail;
+	}
+
+	term_t mlist = PL_new_term_ref();
+	if (!matrix_to_list(mresult, mlist))
+	{
+		DEBUG_PRINT("Error converting the matrix back to list\n");
+		PL_fail;
+	}
+	
+	return PL_unify(result, mlist);
 }
+
+foreign_t
+pl_substract_matrices(term_t m1, term_t m2, term_t result)
+{
+	struct Matrix_t matrix1;
+	struct Matrix_t matrix2;
+	struct Matrix_t* mresult = NULL;
+
+	int res = list_to_matrix(m1, &matrix1);
+	if (!res)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		PL_fail;
+	}
+
+	res = list_to_matrix(m2, &matrix2);
+	if (!res)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		PL_fail;
+	}
+
+
+	struct Matrix_t* ptr = (struct Matrix_t*) calloc(1, sizeof(struct Matrix_t));
+    if (!ptr)
+    {
+        DEBUG_PRINT("Couldn't allocate memory for the new matrix\n");
+        return 0;
+    }
+    else
+    {
+        mresult = ptr;
+    }
+
+	if (!copy_matrix(&matrix1, mresult))
+	{
+		DEBUG_PRINT("Cannot copy matrix\n");
+		PL_fail;
+	}
+	
+	if (!substract_matrices(&matrix1, &matrix2, mresult))
+	{
+		DEBUG_PRINT("Cannot add matrices\n");
+		PL_fail;
+	}
+
+	term_t mlist = PL_new_term_ref();
+	if (!matrix_to_list(mresult, mlist))
+	{
+		DEBUG_PRINT("Error converting the matrix back to list\n");
+		PL_fail;
+	}
+	
+	return PL_unify(result, mlist);
+}
+
 
 install_t
 install()
 {
-	PL_register_foreign("printit", 1, pl_printlist, 0);
-	PL_register_foreign("ismatrix", 1, pl_is_matrix, 0);
-	PL_register_foreign("summatrix", 2, pl_sum_matrix, 0);
-	PL_register_foreign("matrix_size", 3, pl_matrix_size, 0);
+	PL_register_foreign("add_matrices", 3, pl_add_matrices, 0);
+	PL_register_foreign("substract_matrices", 3, pl_substract_matrices, 0);
 }

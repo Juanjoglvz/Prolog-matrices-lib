@@ -1,4 +1,67 @@
 #include <matlog.h>
+#include <string.h>
+
+int copy_matrix(struct Matrix_t* src, struct Matrix_t* dest)
+{
+    if (!src)
+    {
+        DEBUG_PRINT("Null source pointer\n");
+        return 0;
+    }
+    if (!src->size)
+    {
+        DEBUG_PRINT("Null source pointer\n");
+        return 0;
+    }
+    if (!src->rows)
+    {
+        DEBUG_PRINT("Null source pointer\n");
+        return 0;
+    }
+
+        memcpy(dest->size, src->size, sizeof(double) * 2);
+
+    int rows = src->size[0];
+    int cols = src->size[1];
+
+    double** rptr = (double**) calloc(rows, sizeof(double*));
+
+    if (!rptr)
+    {
+        DEBUG_PRINT("Couldn't allocate memory for the new rows\n");
+        return 0;
+    }
+    else
+    {
+        dest->rows = rptr;
+    }
+
+    for (int i = 0; i < rows; i++)
+    {
+        double* cptr = (double*) calloc(cols, sizeof(double));
+        if (!cptr)
+        {
+            DEBUG_PRINT("Tried to allocate memory, but it didnt succeed, aborting\n");
+            return 0;
+        }
+        else
+        {
+            *(dest->rows + i) = cptr;
+        }
+    }
+
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            dest->rows[i][j] = src->rows[i][j];
+        }
+    }
+
+    return 1;
+}
+
+
 
 /*
     Accepts a SWI-Prolog term and returns zero if the term is not a matrix
@@ -228,13 +291,161 @@ int list_to_row(term_t list, size_t length, double* row)
     return 1;
 }
 
-double sum_matrix(struct Matrix_t* matrix)
+int matrix_to_list(struct Matrix_t* matrix, term_t list)
 {
     if (!matrix)
     {
         DEBUG_PRINT("Matrix pointer is null\n");
         return 0;
-    }   
+    }
+    if (!matrix->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+    if (!matrix->rows)
+    {
+        DEBUG_PRINT("Rows pointer is null\n");
+        return 0;
+    }
+
+    size_t rows = matrix->size[0];
+    size_t cols = matrix->size[1];
+    term_t lists = PL_new_term_refs(rows);
+    
+    for (int i = 0; i < rows; i++)
+    {
+        if (!row_to_list(*(matrix->rows + i), cols, lists + i))
+        {
+            DEBUG_PRINT("Error converting row to list\n");
+            return 0;
+        }
+    }
+
+    term_t nlist = PL_new_term_ref();
+    PL_put_nil(nlist);
+    
+    for (int i = rows - 1; i >= 0; i--)
+    {
+        
+        int res = PL_cons_list(nlist, lists + i, nlist);
+        if (res != TRUE)
+        {
+            DEBUG_PRINT("Cannot construct list\n");
+            return 0;
+        }
+    }
+
+    return PL_unify(list, nlist);
+    
+}
+
+int row_to_list(double* row, size_t length, term_t list)
+{
+    if (!row)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+
+    PL_put_nil(list);
+
+    term_t num = PL_new_term_ref();
+    
+    for (int i = length - 1; i >= 0; i--)
+    {
+        int res = PL_put_float(num, row[i]);
+        if (res != TRUE)
+        {
+            DEBUG_PRINT("Cannot put float\n");
+            return 0;
+        }
+
+        res = PL_cons_list(list, num, list);
+        if (res != TRUE)
+        {
+            DEBUG_PRINT("Cannot construct list\n");
+            return 0;
+        }
+    }
+    return 1;
+}
+
+
+int is_squared(struct Matrix_t* matrix, int* result)
+{
+    if (!matrix)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+
+    if (!matrix->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result pointer is null\n");
+        return 0;
+    }
+
+    *result = matrix->size[0] == matrix->size[0];
+    
+    return 1;
+}
+
+int is_same_dimensions(struct Matrix_t* m1, struct Matrix_t* m2, int* result)
+{
+    if (!m1)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }    
+    if (!m1->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+
+    if (!m2)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }    
+    if (!m2->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result pointer is null\n");
+        return 0;
+    }
+
+    *result = m1->size[0] == m2->size[0] && m1->size[1] == m2->size[1];
+    return 1;
+}
+
+
+int sum_matrix(struct Matrix_t* matrix, double* result)
+{
+    if (!matrix)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result pointer is null\n");
+        return 0;
+    }
+
     size_t rows = *(matrix->size);
     size_t columns = *(matrix->size + 1);
 
@@ -249,5 +460,156 @@ double sum_matrix(struct Matrix_t* matrix)
         }        
     }
 
-    return sum;
+    *result = sum;
+    return 1;
+}
+
+int add_matrices(struct Matrix_t* m1, struct Matrix_t* m2, struct Matrix_t* result)
+{
+    if (!m1)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+    if (!m1->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+    if (!m1->rows)
+    {
+        DEBUG_PRINT("Rows pointer is null\n");
+        return 0;
+    }
+
+    if (!m2)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }    
+    if (!m2->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+    if (!m2->rows)
+    {
+        DEBUG_PRINT("Rows pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result matrix pointer is null\n");
+        return 0;
+    }
+    if (!result->size)
+    {
+        DEBUG_PRINT("Result matrix dimensions pointer is null\n");
+        return 0;
+    }
+    if (!result->rows)
+    {
+        DEBUG_PRINT("Result rows pointer is null\n");
+        return 0;
+    }
+
+
+    int same_dims = 0;
+    if (!is_same_dimensions(m1, m2, &same_dims))
+    {
+        DEBUG_PRINT("Error while checking dimensions\n");
+        return 0;
+    }
+
+    if (!same_dims)
+    {
+        DEBUG_PRINT("Matrices do not have the same dimensions\n");
+        return -1;
+    }
+
+    for (int i = 0; i < result->size[0]; i++)
+    {
+        for (int j = 0; j < result->size[1]; j++)
+        {
+            result->rows[i][j] = m1->rows[i][j] + m2->rows[i][j];
+        }
+    }
+
+    return 1;
+}
+
+int substract_matrices(struct Matrix_t* m1, struct Matrix_t* m2, struct Matrix_t* result)
+{
+    if (!m1)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+    if (!m1->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+    if (!m1->rows)
+    {
+        DEBUG_PRINT("Rows pointer is null\n");
+        return 0;
+    }
+
+    if (!m2)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }    
+    if (!m2->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+    if (!m2->rows)
+    {
+        DEBUG_PRINT("Rows pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result matrix pointer is null\n");
+        return 0;
+    }
+    if (!result->size)
+    {
+        DEBUG_PRINT("Result matrix dimensions pointer is null\n");
+        return 0;
+    }
+    if (!result->rows)
+    {
+        DEBUG_PRINT("Result rows pointer is null\n");
+        return 0;
+    }
+
+
+    int same_dims = 0;
+    if (!is_same_dimensions(m1, m2, &same_dims))
+    {
+        DEBUG_PRINT("Error while checking dimensions\n");
+        return 0;
+    }
+
+    if (!same_dims)
+    {
+        DEBUG_PRINT("Matrices do not have the same dimensions\n");
+        return -1;
+    }
+
+    for (int i = 0; i < result->size[0]; i++)
+    {
+        for (int j = 0; j < result->size[1]; j++)
+        {
+            result->rows[i][j] = m1->rows[i][j] - m2->rows[i][j];
+        }
+    }
+    
+    return 1;
 }
