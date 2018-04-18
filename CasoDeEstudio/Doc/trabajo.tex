@@ -1,0 +1,88 @@
+\documentclass[a4paper]{article}
+
+\usepackage[a4paper, total={6in, 9.5in}]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[british]{babel}    
+    
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{lastpage}
+\usepackage{multirow}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+
+
+\usepackage{graphicx}
+\graphicspath{{images/}}
+
+\pagestyle{fancy}
+
+\lhead{Programación Declarativa}
+\rhead{Página \thepage\ de \pageref{LastPage}}
+
+\begin{document}
+\renewcommand{\contentsname}{Índice}
+
+\begin{titlepage}
+\begin{center}
+
+\includegraphics[width=0.6\textwidth]{logoesi}\\[5cm]
+
+% Title
+\rule{\linewidth}{0.5mm} \\[0.4cm]
+{ \huge \bfseries Programación Declarativa\\[0.4cm] }
+\rule{\linewidth}{0.5mm} \\[1.5cm]
+{\huge Interfaz \texttt{SWI-Prolog $\longleftrightarrow$ C/C++} (2017/2018)}\\[0.5cm]
+
+% Authors
+\large{Javier Córdoba Romero}\\
+\large{Juan José Corroto Martín}\\
+
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+
+\section{Introducción}
+\subsection{Bibliotecas estáticas y dinámicas} %???
+\subsection{Predicados deterministas y no deterministas}
+
+
+\section{Compilación y ejecución de bibliotecas dinámicas}
+\subsection{Compilación}
+\subsection{Ejecución}
+
+
+\section{Implementación de predicados externos}
+\subsection{Definición de predicados externos}
+\subsection{Función de instalación}
+\subsection{El tipo \texttt{term\_t}}
+\subsection{Análisis y construcción de términos}
+\subsubsection{Comprobación de tipos}
+\subsubsection{Términos simples}
+\subsubsection{Términos compuestos}
+\subsubsection{Listas}
+\subsection{Llamadas a predicados Prolog}
+\subsection{Otras funciones}
+
+
+\section{Ejemplo}
+\subsection{Archivo \texttt{install.c}}
+\subsection{Archivo  \texttt{mult\_list.c}}
+\subsection{Archivo  \texttt{count\_string.c}}
+\subsection{Script de compilación}
+\subsection{Sesión de ejemplo}
+
+
+\section{Referencias}
+\end{document}
+
+%%% Local Variables:
+%%%   coding: utf-8
+%%%   flyspell-mode: t
+%%%   ispell-local-dictionary: "british"
+%%% End:
