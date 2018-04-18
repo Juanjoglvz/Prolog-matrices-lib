@@ -685,6 +685,64 @@ int multiply_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, stru
     return 1;
 }
 
+int multiply_matrix(const struct Matrix_t* matrix, double factor, struct Matrix_t* result)
+{
+    if (!matrix)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+    if (!matrix->size)
+    {
+        DEBUG_PRINT("Matrix dimensions pointer is null\n");
+        return 0;
+    }
+    if (!matrix->rows)
+    {
+        DEBUG_PRINT("Matrix rows pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result matrix pointer is null\n");
+        return 0;
+    }
+    if (!result->size)
+    {
+        DEBUG_PRINT("Result matrix dimensions pointer is null\n");
+        return 0;
+    }
+    if (!result->rows)
+    {
+        DEBUG_PRINT("Result rows pointer is null\n");
+        return 0;
+    }
+
+
+    int tmp = 0;
+    if (!is_same_dimensions(matrix, result, &tmp))
+    {
+        DEBUG_PRINT("Error checking for same dimensions\n");
+        return 0;
+    }
+    if (!tmp)
+    {
+        DEBUG_PRINT("Matrix do not have the same dimensions\n");
+        return 0;
+    }
+
+    for (int i = 0; i < result->size[0]; i++)
+    {
+        for (int j = 0; j < result->size[1]; j++)
+        {
+            result->rows[i][j] = matrix->rows[i][j] * factor;
+        }
+    }
+
+    return 1;
+}
+
 int determinant(const struct Matrix_t* matrix, double* result)
 {
     if (!matrix)
@@ -734,58 +792,17 @@ int determinant(const struct Matrix_t* matrix, double* result)
     else // Apply Laplace expansion
     {
         double det = 0;
-        size_t nsize[2] = {matrix->size[0] - 1, matrix->size[1] - 1};
-        struct Matrix_t* ndet = alloc_matrix(nsize); // Temp matrix
-        if (!ndet)
+        
+        for (int i = 0; i < matrix->size[0]; i++) // For every element in first row
         {
-            DEBUG_PRINT("Error allocating temp memory\n");
-            return 0;
-        }
-
-        for (int k = 0; k < matrix->size[0]; k++) // For every element in first column
-        {
-            int counter = 0;
-            for (int i = 1; i < matrix->size[0]; i++) // Create its "minor"
-            {
-                int inner_counter = 0;
-                for (int j = 0; j < matrix->size[0]; j++)
-                {
-                    if (j == k)
-                        continue;
-
-                    ndet->rows[counter][inner_counter] = matrix->rows[i][j];
-                    inner_counter++;
-                }
-                counter++;
-            }
-
             double temp = 0;
-            if (!determinant(ndet, &temp))
+            if (!adjoint(matrix, 0, i, &temp))
             {
-                DEBUG_PRINT("Error calculating inner determinant\n");
-                if (!free_matrix(ndet))
-                {
-                    DEBUG_PRINT("Error freeing memory!\n");
-                }
+                DEBUG_PRINT("Eror calculating adjoint");
                 return 0;
             }
-
-            if (k % 2 == 0)
-            {
-                det += temp * matrix->rows[0][k];
-            }
-            else
-            {
-                det -= temp * matrix->rows[0][k];
-            }
+            det += temp;
         }
-        
-        if (!free_matrix(ndet))
-        {
-            DEBUG_PRINT("Error freeing memory!\n");
-            return 0;
-        }
-
         *result = det;
     }
     return 1;
@@ -823,6 +840,143 @@ int transpose(const struct Matrix_t* matrix, struct Matrix_t* result)
         {
             result->rows[i][j] = matrix->rows[j][i];
         }
+    }
+
+    return 1;
+}
+
+int inverse(const struct Matrix_t* matrix, struct Matrix_t* result)
+{
+    if (!matrix)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+    if (!matrix->size)
+    {
+        DEBUG_PRINT("Matrix dimensions pointer is null\n");
+        return 0;
+    }
+    if (!matrix->rows)
+    {
+        DEBUG_PRINT("Matrix rows pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result matrix pointer is null\n");
+        return 0;
+    }
+    if (!result->size)
+    {
+        DEBUG_PRINT("Result matrix dimensions pointer is null\n");
+        return 0;
+    }
+    if (!result->rows)
+    {
+        DEBUG_PRINT("Result rows pointer is null\n");
+        return 0;
+    }
+
+    int tmp = 0;
+    if (!is_same_dimensions(matrix, result, &tmp))
+    {
+        DEBUG_PRINT("Error checking for same dimensions\n");
+        return 0;
+    }
+    if (!tmp)
+    {
+        DEBUG_PRINT("Matrix do not have the same dimensions\n");
+        return 0;
+    }
+
+
+    int sq = -1;
+    if (!is_squared(matrix, &sq))
+    {
+        DEBUG_PRINT("Error when checking for squareness of matrix\n");
+        return 0;
+    }
+    if (sq != 1)
+    {
+        DEBUG_PRINT("Matrix is not invertible\n");
+        return 0;
+    }
+
+    double det = 0;
+    if (!determinant(matrix, &det))
+    {
+        DEBUG_PRINT("Error checking for matrix singularity\n");
+        return 0;
+    }
+    if (det == 0)
+    {
+        DEBUG_PRINT("Matrix is singular and thus is not invertible\n");
+        return 0;
+    }
+
+    struct Matrix_t* cofactor = alloc_matrix(matrix->size);
+    if (!cofactor)
+    {
+        DEBUG_PRINT("Cannot allocate new memory\n");
+        return 0;
+    }
+    
+    for (int i = 0; i < cofactor->size[0]; i++)
+    {
+        for (int j = 0; j < cofactor->size[1]; j++)
+        {
+            double temp = 0;
+            if (!adjoint(matrix, i, j, &temp))
+            {
+                DEBUG_PRINT("Error calculating adjoints\n");
+                if (!free_matrix(cofactor))
+                {
+                    DEBUG_PRINT("Error freeing memory\n");
+                }
+                return 0;
+            }
+
+            cofactor->rows[i][j] = temp;
+        }
+    }
+
+    struct Matrix_t* adjugate = alloc_matrix(matrix->size);
+    if (!adjugate)
+    {
+        DEBUG_PRINT("Cannot allocate new memory\n");
+        if (!free_matrix(cofactor))
+        {
+            DEBUG_PRINT("Error freeing memory\n");
+        }
+        return 0;
+    }
+
+    if (!transpose(cofactor, adjugate))
+    {
+        DEBUG_PRINT("Error transposing cofactor matrix\n");
+        if (!free_matrix(cofactor) | !free_matrix(adjugate))
+        {
+            DEBUG_PRINT("Error freeing memory\n");
+        }
+        return 0;
+    }
+
+    if (!multiply_matrix(adjugate, 1 / det, result))
+    {
+        DEBUG_PRINT("Error dividing transposed matrix\n");
+        if (!free_matrix(cofactor) | !free_matrix(adjugate))
+        {
+            DEBUG_PRINT("Error freeing memory\n");
+        }
+        return 0;
+    }
+
+    if (!free_matrix(cofactor) | !free_matrix(adjugate))
+    {
+        DEBUG_PRINT("Error freeing memory\n");
+        return 0;
     }
 
     return 1;
@@ -888,7 +1042,7 @@ int is_same_dimensions(const struct Matrix_t* m1, const struct Matrix_t* m2, int
     return 1;
 }
 
-int minor(const struct Matrix_t* matrix, int row, int col, double* result)
+int adjoint(const struct Matrix_t* matrix, int row, int col, double* result)
 {
     if (!matrix)
     {
@@ -918,5 +1072,56 @@ int minor(const struct Matrix_t* matrix, int row, int col, double* result)
         return 0;
     }
 
+    size_t nsize[2] = {matrix->size[0] - 1, matrix->size[1] - 1};
+    struct Matrix_t* det = alloc_matrix(nsize); // Temp matrix
+    if (!det)
+    {
+        DEBUG_PRINT("Error allocating temp memory\n");
+        return 0;
+    }
+
+    int counter = 0;
+    for (int i = 1; i < matrix->size[0]; i++) // Create its "adjoint"
+    {
+        if (i == row)
+            continue;
+        int inner_counter = 0;
+        for (int j = 0; j < matrix->size[0]; j++)
+        {
+            if (j == col)
+                continue;
+
+            det->rows[counter][inner_counter] = matrix->rows[i][j];
+            inner_counter++;
+        }
+        counter++;
+    }
+
+    double temp = 0;
+    if (!determinant(det, &temp))
+    {
+        DEBUG_PRINT("Error calculating inner determinant\n");
+        if (!free_matrix(det))
+        {
+            DEBUG_PRINT("Error freeing memory!\n");
+        }
+        return 0;
+    }
+
+    if (!free_matrix(det))
+    {
+        DEBUG_PRINT("Error freeing memory!\n");
+        return 0;
+    }
+
+    if ((row + col) % 2 == 0)
+    {
+        *result = temp * matrix->rows[row][col];
+    }
+    else
+    {
+        *result = temp * matrix->rows[row][col] * -1;
+    }
     
+    return 1;
 }
