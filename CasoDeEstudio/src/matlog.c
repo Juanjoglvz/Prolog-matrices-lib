@@ -1,5 +1,6 @@
 #include <matlog.h>
 #include <string.h>
+#include <math.h>
 
 struct Matrix_t* alloc_matrix(const size_t size[static 2])
 {
@@ -326,6 +327,7 @@ int list_to_row(const term_t list, size_t length, double* row)
                 if (!PL_get_integer(head, &ival))
                 {
                     DEBUG_PRINT("Error while getting the value of the element\n");
+                    return 0;
                 }
 
                 *(row + i) = (double) ival;
@@ -335,6 +337,7 @@ int list_to_row(const term_t list, size_t length, double* row)
                 if (!PL_get_float(head, &dval))
                 {
                     DEBUG_PRINT("Error while getting the value of the element\n");
+                    return 0;
                 }
 
                 *(row + i) = dval;
@@ -801,7 +804,7 @@ int determinant(const struct Matrix_t* matrix, double* result)
                 DEBUG_PRINT("Eror calculating adjoint");
                 return 0;
             }
-            det += temp;
+            det += temp * matrix->rows[0][i];
         }
         *result = det;
     }
@@ -899,6 +902,12 @@ int inverse(const struct Matrix_t* matrix, struct Matrix_t* result)
         return 0;
     }
     if (sq != 1)
+    {
+        DEBUG_PRINT("Matrix is not invertible\n");
+        return 0;
+    }
+
+    if (matrix->size[0] == 1)
     {
         DEBUG_PRINT("Matrix is not invertible\n");
         return 0;
@@ -1003,7 +1012,7 @@ int is_squared(const struct Matrix_t* matrix, int* result)
         return 0;
     }
 
-    *result = matrix->size[0] == matrix->size[0];
+    *result = matrix->size[0] == matrix->size[1];
     
     return 1;
 }
@@ -1081,7 +1090,7 @@ int adjoint(const struct Matrix_t* matrix, int row, int col, double* result)
     }
 
     int counter = 0;
-    for (int i = 1; i < matrix->size[0]; i++) // Create its "adjoint"
+    for (int i = 0; i < matrix->size[0]; i++) // Create its "adjoint"
     {
         if (i == row)
             continue;
@@ -1114,14 +1123,7 @@ int adjoint(const struct Matrix_t* matrix, int row, int col, double* result)
         return 0;
     }
 
-    if ((row + col) % 2 == 0)
-    {
-        *result = temp * matrix->rows[row][col];
-    }
-    else
-    {
-        *result = temp * matrix->rows[row][col] * -1;
-    }
+    *result = temp * pow(-1, row + col);
     
     return 1;
 }
