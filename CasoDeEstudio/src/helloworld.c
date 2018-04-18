@@ -5,253 +5,355 @@
 #include <stdio.h>
 #include <matlog.h>
 
-/*int printlist(term_t list)
-{
-	if (!PL_is_list(list))
-	{
-		printf("Term is not a list\n");
-		return -1;
-	}
-
-	long unsigned int length;
-	if (!PL_skip_list(list, NULLTERM, &length))
-	{
-		printf("Error getting the length of the list");
-		return -2;
-	}
-
-	term_t head = PL_new_term_ref();
-	term_t tail = PL_copy_term_ref(list);
-
-	printf("[");
-	int i;
-	for (i = 0; i < length; i++)
-	{
-		if (!PL_get_list(tail, head, tail))
-		{
-			printf("Error getting the list\n");
-			return -3;
-		}
-		// Recursively call this function to print nested lists
-		if (PL_is_list(head))
-		{
-			int error = printlist(head);
-			if (error)
-				return error;
-			printf(", ");
-		}
-		else if (!PL_is_integer(head))
-		{
-			printf("Element is not an integer\n");
-			return -4;
-		}
-		else
-		{
-			int val;
-			if (!PL_get_integer(head, &val))
-			{
-				printf("Error getting the integer");
-				return -5;
-			}
-			printf("%d, ", val);
-		}
-	}
-	printf("\b\b]");
-	return 0;
-}
-
 foreign_t
-pl_printlist(term_t list)
-{
-	if (!PL_is_list(list))
-	{
-		printf("Input parameter is not a list!\n");
-		PL_fail;
-	}
-	
-	int retval = printlist(list);
-	printf("\nRetval is: %d\n", retval);
-	
-	if (retval)
-		PL_fail;
-	else
-		PL_succeed;
-}
-
+pl_add_matrices(term_t m1, term_t m2, term_t result);
 foreign_t
-pl_is_matrix(term_t list)
-{
-	size_t dimensions[2];
-	int res = is_matrix(list, dimensions);
-	if (res)
-	{
-		DEBUG_PRINT("Number of rows: %lu  Number of columns: %lu\n", dimensions[0], dimensions[1]);
-	}
-	return res == 0 ? 0 : 1;
-}
-
+pl_sum_elements_matrix(term_t m1, term_t result);
 foreign_t
-pl_matrix_size(term_t list, term_t row, term_t column)
-{
-	size_t dimensions[2] = {0};
-
-	int res = is_matrix(list, dimensions);
-
-	if (!res)
-	{
-		PL_fail;
-	}
-	else
-	{
-		term_t tRow = PL_new_term_ref();
-		term_t tColumn = PL_new_term_ref();
-
-		PL_put_integer(tRow, dimensions[0]);
-		PL_put_integer(tColumn, dimensions[1]);
-
-		PL_unify(row, tRow);
-		return PL_unify(column, tColumn);
-	}
-}
-
+pl_substract_matrices(term_t m1, term_t m2, term_t result);
 foreign_t
-pl_sum_matrix(term_t list, term_t out)
-{
-	struct Matrix_t* matrix = (struct Matrix_t*) calloc(1, sizeof(struct Matrix_t));
-	if (!matrix)
-	{
-		DEBUG_PRINT("Cannot allocate memory for the matrix\n");
-		PL_fail;
-	}
+pl_multiply_matrices(term_t m1, term_t m2, term_t result);
+foreign_t
+pl_determinant_matrix(term_t m1, term_t result);
+foreign_t
+pl_transpose_matrix(term_t m1, term_t result);
 
-	int res = list_to_matrix(list, matrix);
-	if (!res)
-	{
-		DEBUG_PRINT("Cannot parse list to matrix\n");
-		PL_fail;
-	}
-
-	double sum = sum_matrix(matrix);
-
-	term_t result = PL_new_term_ref();
-	PL_put_float(result, sum);
-	return PL_unify(out, result);
-}*/
 
 foreign_t
 pl_add_matrices(term_t m1, term_t m2, term_t result)
 {
-	struct Matrix_t matrix1;
-	struct Matrix_t matrix2;
+	struct Matrix_t* matrix1;
+	struct Matrix_t* matrix2;
 	struct Matrix_t* mresult = NULL;
 
-	int res = list_to_matrix(m1, &matrix1);
-	if (!res)
+	matrix1 = list_to_matrix(m1);
+	if (!matrix1)
 	{
 		DEBUG_PRINT("Cannot parse list to matrix\n");
 		PL_fail;
 	}
 
-	res = list_to_matrix(m2, &matrix2);
-	if (!res)
+	matrix2 = list_to_matrix(m2);
+	if (!matrix2)
 	{
 		DEBUG_PRINT("Cannot parse list to matrix\n");
+		if (!free_matrix(matrix1))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
 		PL_fail;
 	}
 
 
-	struct Matrix_t* ptr = (struct Matrix_t*) calloc(1, sizeof(struct Matrix_t));
-    if (!ptr)
+	mresult = alloc_matrix(matrix1->size);
+    if (!mresult)
     {
         DEBUG_PRINT("Couldn't allocate memory for the new matrix\n");
-        return 0;
+		if (!free_matrix(matrix1) | !free_matrix(matrix2))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
     }
-    else
-    {
-        mresult = ptr;
-    }
-
-	if (!copy_matrix(&matrix1, mresult))
-	{
-		DEBUG_PRINT("Cannot copy matrix\n");
-		PL_fail;
-	}
 	
-	if (!add_matrices(&matrix1, &matrix2, mresult))
+	if (!add_matrices(matrix1, matrix2, mresult))
 	{
 		DEBUG_PRINT("Cannot add matrices\n");
-		PL_fail;
+		if (!free_matrix(matrix1) | !free_matrix(matrix2) | !free_matrix(mresult))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
 	}
 
 	term_t mlist = PL_new_term_ref();
 	if (!matrix_to_list(mresult, mlist))
 	{
 		DEBUG_PRINT("Error converting the matrix back to list\n");
-		PL_fail;
+		if (!free_matrix(matrix1) | !free_matrix(matrix2) | !free_matrix(mresult))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
 	}
 	
+	if (!free_matrix(matrix1) | !free_matrix(matrix2) | !free_matrix(mresult))
+	{
+		DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		PL_fail;
+	}
+
 	return PL_unify(result, mlist);
 }
 
 foreign_t
-pl_substract_matrices(term_t m1, term_t m2, term_t result)
+pl_sum_elements_matrix(term_t m1, term_t result)
 {
-	struct Matrix_t matrix1;
-	struct Matrix_t matrix2;
-	struct Matrix_t* mresult = NULL;
+	struct Matrix_t* matrix1;
 
-	int res = list_to_matrix(m1, &matrix1);
-	if (!res)
+	matrix1 = list_to_matrix(m1);
+	if (!matrix1)
 	{
 		DEBUG_PRINT("Cannot parse list to matrix\n");
-		PL_fail;
-	}
-
-	res = list_to_matrix(m2, &matrix2);
-	if (!res)
-	{
-		DEBUG_PRINT("Cannot parse list to matrix\n");
-		PL_fail;
-	}
-
-
-	struct Matrix_t* ptr = (struct Matrix_t*) calloc(1, sizeof(struct Matrix_t));
-    if (!ptr)
-    {
-        DEBUG_PRINT("Couldn't allocate memory for the new matrix\n");
-        return 0;
-    }
-    else
-    {
-        mresult = ptr;
-    }
-
-	if (!copy_matrix(&matrix1, mresult))
-	{
-		DEBUG_PRINT("Cannot copy matrix\n");
 		PL_fail;
 	}
 	
-	if (!substract_matrices(&matrix1, &matrix2, mresult))
+	double mresult = 0;
+	if (!sum_elements(matrix1, &mresult))
+	{
+		DEBUG_PRINT("Cannot add elements\n");
+		if (!free_matrix(matrix1))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
+	}
+	
+	if (!free_matrix(matrix1))
+	{
+		DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		PL_fail;
+	}
+
+	term_t temp = PL_new_term_ref();
+	
+	return PL_put_float(temp, mresult) && PL_unify(result, temp);
+}
+
+foreign_t
+pl_substract_matrices(term_t m1, term_t m2, term_t result)
+{	
+	struct Matrix_t* matrix1;
+	struct Matrix_t* matrix2;
+	struct Matrix_t* mresult = NULL;
+
+	matrix1 = list_to_matrix(m1);
+	if (!matrix1)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		PL_fail;
+	}
+
+	matrix2 = list_to_matrix(m2);
+	if (!matrix2)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		if (!free_matrix(matrix1))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+		PL_fail;
+	}
+
+
+	mresult = alloc_matrix(matrix1->size);
+    if (!mresult)
+    {
+        DEBUG_PRINT("Couldn't allocate memory for the new matrix\n");
+		if (!free_matrix(matrix1) | !free_matrix(matrix2))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
+    }
+	
+	if (!substract_matrices(matrix1, matrix2, mresult))
 	{
 		DEBUG_PRINT("Cannot add matrices\n");
-		PL_fail;
+		if (!free_matrix(matrix1) | !free_matrix(matrix2) | !free_matrix(mresult))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
 	}
 
 	term_t mlist = PL_new_term_ref();
 	if (!matrix_to_list(mresult, mlist))
 	{
 		DEBUG_PRINT("Error converting the matrix back to list\n");
-		PL_fail;
+		if (!free_matrix(matrix1) | !free_matrix(matrix2) | !free_matrix(mresult))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
 	}
 	
+	if (!free_matrix(matrix1) | !free_matrix(matrix2) | !free_matrix(mresult))
+	{
+		DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		PL_fail;
+	}
+
 	return PL_unify(result, mlist);
 }
 
+foreign_t
+pl_multiply_matrices(term_t m1, term_t m2, term_t result)
+{
+	struct Matrix_t* matrix1;
+	struct Matrix_t* matrix2;
+	struct Matrix_t* mresult = NULL;
+
+	matrix1 = list_to_matrix(m1);
+	if (!matrix1)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		PL_fail;
+	}
+
+	matrix2 = list_to_matrix(m2);
+	if (!matrix2)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		if (!free_matrix(matrix1))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+		PL_fail;
+	}
+
+	size_t nsize[2] = {0};
+	nsize[0] = matrix1->size[0];
+	nsize[1] = matrix2->size[1];
+	mresult = alloc_matrix(nsize);
+    if (!mresult)
+    {
+        DEBUG_PRINT("Couldn't allocate memory for the new matrix\n");
+		if (!free_matrix(matrix1) | !free_matrix(matrix2))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
+    }
+	
+	if (!multiply_matrices(matrix1, matrix2, mresult))
+	{
+		DEBUG_PRINT("Cannot add matrices\n");
+		if (!free_matrix(matrix1) | !free_matrix(matrix2) | !free_matrix(mresult))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
+	}
+
+	term_t mlist = PL_new_term_ref();
+	if (!matrix_to_list(mresult, mlist))
+	{
+		DEBUG_PRINT("Error converting the matrix back to list\n");
+		if (!free_matrix(matrix1) | !free_matrix(matrix2) | !free_matrix(mresult))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
+	}
+	
+	if (!free_matrix(matrix1) | !free_matrix(matrix2) | !free_matrix(mresult))
+	{
+		DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		PL_fail;
+	}
+
+	return PL_unify(result, mlist);
+}
+
+foreign_t
+pl_determinant_matrix(term_t m1, term_t result)
+{
+	struct Matrix_t* matrix1;
+
+	matrix1 = list_to_matrix(m1);
+	if (!matrix1)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		PL_fail;
+	}
+	
+	double mresult = 0;
+	if (!determinant(matrix1, &mresult))
+	{
+		DEBUG_PRINT("Cannot calculate determinant\n");
+		if (!free_matrix(matrix1))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
+	}
+	
+	if (!free_matrix(matrix1))
+	{
+		DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		PL_fail;
+	}
+
+	term_t temp = PL_new_term_ref();
+	
+	return PL_put_float(temp, mresult) && PL_unify(result, temp);
+}
+
+foreign_t
+pl_transpose_matrix(term_t m1, term_t result)
+{
+	struct Matrix_t* matrix1;
+	struct Matrix_t* mresult = NULL;
+
+	matrix1 = list_to_matrix(m1);
+	if (!matrix1)
+	{
+		DEBUG_PRINT("Cannot parse list to matrix\n");
+		PL_fail;
+	}
+
+	size_t nsize[2] = {0};
+	nsize[0] = matrix1->size[1];
+	nsize[1] = matrix1->size[0];
+	mresult = alloc_matrix(nsize);
+    if (!mresult)
+    {
+        DEBUG_PRINT("Couldn't allocate memory for the new matrix\n");
+		if (!free_matrix(matrix1))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
+    }
+	
+	if (!transpose(matrix1, mresult))
+	{
+		DEBUG_PRINT("Cannot add matrices\n");
+		if (!free_matrix(matrix1) | !free_matrix(mresult))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
+	}
+
+	term_t mlist = PL_new_term_ref();
+	if (!matrix_to_list(mresult, mlist))
+	{
+		DEBUG_PRINT("Error converting the matrix back to list\n");
+		if (!free_matrix(matrix1) | !free_matrix(mresult))
+		{
+			DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		}
+        PL_fail;
+	}
+	
+	if (!free_matrix(matrix1) | !free_matrix(mresult))
+	{
+		DEBUG_PRINT("Error freeing matrix memory, memory corruption??\n");
+		PL_fail;
+	}
+
+	return PL_unify(result, mlist);
+}
 
 install_t
 install()
 {
 	PL_register_foreign("add_matrices", 3, pl_add_matrices, 0);
+	PL_register_foreign("sum_elements", 2, pl_sum_elements_matrix, 0);
 	PL_register_foreign("substract_matrices", 3, pl_substract_matrices, 0);
+	PL_register_foreign("multiply_matrices", 3, pl_multiply_matrices, 0);
+	PL_register_foreign("determinant", 2, pl_determinant_matrix, 0);
+	PL_register_foreign("transpose", 2, pl_transpose_matrix, 0);
 }

@@ -1,7 +1,69 @@
 #include <matlog.h>
 #include <string.h>
 
-int copy_matrix(struct Matrix_t* src, struct Matrix_t* dest)
+struct Matrix_t* alloc_matrix(const size_t size[static 2])
+{
+    if (!size)
+    {
+        DEBUG_PRINT("Null size pointer\n");
+        return NULL;
+    }
+
+    struct Matrix_t* mat = calloc(1, sizeof(struct Matrix_t));
+    if (!mat)
+    {
+        DEBUG_PRINT("Couldn't allocate memory for the new matrix");
+        return NULL;
+    }
+
+    memcpy(mat->size, size, sizeof(size_t) * 2);
+
+
+    int rows = size[0];
+    int cols = size[1];
+
+    double** rptr = (double**) calloc(rows, sizeof(double*));
+
+    if (!rptr)
+    {
+        DEBUG_PRINT("Couldn't allocate memory for the new rows\n");
+        free(mat);
+        mat = NULL;
+        return NULL;
+    }
+    else
+    {
+        mat->rows = rptr;
+    }
+
+    for (int i = 0; i < rows; i++)
+    {
+        double* cptr = (double*) calloc(cols, sizeof(double));
+        if (!cptr)
+        {
+            DEBUG_PRINT("Tried to allocate memory, but it didnt succeed, aborting\n");
+            for (int j = 0; j < i; j++)
+            {
+                free(*(mat->rows + i));
+                *(mat->rows + i) = NULL;
+            }
+            free(rptr);
+            rptr = NULL;
+            free(mat);
+            mat = NULL;
+            return NULL;
+        }
+        else
+        {
+            *(mat->rows + i) = cptr;
+        }
+    }
+
+    return mat;
+
+}
+
+struct Matrix_t* copy_matrix(const struct Matrix_t* src)
 {
     if (!src)
     {
@@ -19,36 +81,16 @@ int copy_matrix(struct Matrix_t* src, struct Matrix_t* dest)
         return 0;
     }
 
-        memcpy(dest->size, src->size, sizeof(double) * 2);
+    struct Matrix_t* dest = alloc_matrix(src->size);
 
-    int rows = src->size[0];
-    int cols = src->size[1];
-
-    double** rptr = (double**) calloc(rows, sizeof(double*));
-
-    if (!rptr)
+    if (!dest)
     {
-        DEBUG_PRINT("Couldn't allocate memory for the new rows\n");
-        return 0;
-    }
-    else
-    {
-        dest->rows = rptr;
+        DEBUG_PRINT("Couldn't allocate memory for the new matrix\n");
+        return NULL;
     }
 
-    for (int i = 0; i < rows; i++)
-    {
-        double* cptr = (double*) calloc(cols, sizeof(double));
-        if (!cptr)
-        {
-            DEBUG_PRINT("Tried to allocate memory, but it didnt succeed, aborting\n");
-            return 0;
-        }
-        else
-        {
-            *(dest->rows + i) = cptr;
-        }
-    }
+    size_t rows = src->size[0];
+    size_t cols = src->size[1];
 
     for (int i = 0; i < rows; i++)
     {
@@ -58,10 +100,43 @@ int copy_matrix(struct Matrix_t* src, struct Matrix_t* dest)
         }
     }
 
-    return 1;
+    return NULL;
 }
 
+/*
+    Frees the memory used by a matrix pointer, any row-data NULL pointers
+    will be ignored to avoid double-free memory corruption.
+*/
+int free_matrix(struct Matrix_t* matrix)
+{
+    if (!matrix)
+    {
+        DEBUG_PRINT("Null pointer, ignoring to avoid double-free\n");
+        return 0;
+    }
+    if (!matrix->size)
+    {
+        DEBUG_PRINT("Null pointer, ignoring to avoid double-free\n");
+        return 0;
+    }
 
+    for (int i = 0; i < matrix->size[0]; i++)
+    {
+        if (*(matrix->rows + i))
+        {
+            free(*(matrix->rows + i));
+            *(matrix->rows + i) = NULL;
+        }
+    }
+
+    free(matrix->rows);
+    matrix->rows = NULL;
+    
+    free(matrix);
+    matrix = NULL;
+    
+    return 1;
+}
 
 /*
     Accepts a SWI-Prolog term and returns zero if the term is not a matrix
@@ -71,8 +146,14 @@ int copy_matrix(struct Matrix_t* src, struct Matrix_t* dest)
     array, the first element is the number of rows, the second the
     number of columns
 */
-int is_matrix(term_t list, size_t* dimensions)
+int is_matrix(const term_t list, size_t dimensions[static 2])
 {
+    if (!dimensions)
+    {
+        DEBUG_PRINT("Size array is null\n");
+        return 0;
+    }
+
     size_t elements = 0;
     size_t rows = 0;
     size_t columns = 0;
@@ -85,7 +166,7 @@ int is_matrix(term_t list, size_t* dimensions)
     }
     else
     {
-        if (!PL_skip_list(list, NULLTERM, &elements))
+        if (!PL_skip_list(list, NULLTERM, &elements)) // Get the length of the list
         {
             DEBUG_PRINT("Error while getting the list length\n");
             return 0;
@@ -162,51 +243,27 @@ int is_matrix(term_t list, size_t* dimensions)
     return (int) rows;
 }
 
-int list_to_matrix(term_t list, struct Matrix_t* matrix)
+struct Matrix_t* list_to_matrix(const term_t list)
 {
-    if (!matrix)
-    {
-        DEBUG_PRINT("Matrix pointer is NULL\n");
-        return 0;
-    }
+    size_t dims[2] = {0, 0};
 
-    int res = is_matrix(list, matrix->size);
+    int res = is_matrix(list, dims);
 
     if (!res)
     {
         DEBUG_PRINT("List is not a matrix\n");
-        return 0;
+        return NULL;
     }
 
-    size_t rows = *(matrix->size);
-    size_t columns = *(matrix->size + 1);
-    // Allocate space for the matrix data
+    struct Matrix_t* matrix = alloc_matrix(dims);
 
-    double** rptr = (double**) calloc(rows, sizeof(double*));
-    if (!rptr)
+    if (!matrix)
     {
-        DEBUG_PRINT("Tried to allocate memory, but it didnt succeed, aborting\n");
-        return 0;
-    }
-    else
-    {
-        matrix->rows = rptr;
+        DEBUG_PRINT("Couldnt allocate new matrix\n");
     }
 
-
-    for (int i = 0; i < rows; i++)
-    {
-        double* ptr = (double*) calloc(columns, sizeof(double));
-        if (!ptr)
-        {
-            DEBUG_PRINT("Tried to allocate memory, but it didnt succeed, aborting\n");
-            return 0;
-        }
-        else
-        {
-            *(matrix->rows + i) = ptr;
-        }
-    }
+    size_t rows = dims[0];
+    size_t columns = dims[1];
 
 
     term_t head = PL_new_term_ref();
@@ -217,17 +274,18 @@ int list_to_matrix(term_t list, struct Matrix_t* matrix)
         if (!PL_get_list(tail, head, tail))
         {
             DEBUG_PRINT("Error while iterating through the list\n");
-            return 0;
+            return NULL;
         }
             
 
         double* row = *(matrix->rows + i);
-        int res = 0;
+        int res = -1;
         if (rows == 1) // Row matrix
         {
             res = list_to_row(list, columns, row);
         }
-        else
+
+        if (rows != 1 || res != -1)
         {
             res = list_to_row(head, columns, row);
         }
@@ -235,13 +293,13 @@ int list_to_matrix(term_t list, struct Matrix_t* matrix)
         if (!res)
         {
             DEBUG_PRINT("Couldn't convert the list to a matrix\n");
-            return 0;
+            return NULL;
         }
     }
-    return 1;
+    return matrix;
 }
 
-int list_to_row(term_t list, size_t length, double* row)
+int list_to_row(const term_t list, size_t length, double* row)
 {
     if (!row)
     {
@@ -291,7 +349,7 @@ int list_to_row(term_t list, size_t length, double* row)
     return 1;
 }
 
-int matrix_to_list(struct Matrix_t* matrix, term_t list)
+int matrix_to_list(const struct Matrix_t* matrix, term_t list)
 {
     if (!matrix)
     {
@@ -372,67 +430,7 @@ int row_to_list(double* row, size_t length, term_t list)
 }
 
 
-int is_squared(struct Matrix_t* matrix, int* result)
-{
-    if (!matrix)
-    {
-        DEBUG_PRINT("Matrix pointer is null\n");
-        return 0;
-    }
-
-    if (!matrix->size)
-    {
-        DEBUG_PRINT("Dimensions pointer is null\n");
-        return 0;
-    }
-
-    if (!result)
-    {
-        DEBUG_PRINT("Result pointer is null\n");
-        return 0;
-    }
-
-    *result = matrix->size[0] == matrix->size[0];
-    
-    return 1;
-}
-
-int is_same_dimensions(struct Matrix_t* m1, struct Matrix_t* m2, int* result)
-{
-    if (!m1)
-    {
-        DEBUG_PRINT("Matrix pointer is null\n");
-        return 0;
-    }    
-    if (!m1->size)
-    {
-        DEBUG_PRINT("Dimensions pointer is null\n");
-        return 0;
-    }
-
-    if (!m2)
-    {
-        DEBUG_PRINT("Matrix pointer is null\n");
-        return 0;
-    }    
-    if (!m2->size)
-    {
-        DEBUG_PRINT("Dimensions pointer is null\n");
-        return 0;
-    }
-
-    if (!result)
-    {
-        DEBUG_PRINT("Result pointer is null\n");
-        return 0;
-    }
-
-    *result = m1->size[0] == m2->size[0] && m1->size[1] == m2->size[1];
-    return 1;
-}
-
-
-int sum_matrix(struct Matrix_t* matrix, double* result)
+int sum_elements(const struct Matrix_t* matrix, double* result)
 {
     if (!matrix)
     {
@@ -464,7 +462,7 @@ int sum_matrix(struct Matrix_t* matrix, double* result)
     return 1;
 }
 
-int add_matrices(struct Matrix_t* m1, struct Matrix_t* m2, struct Matrix_t* result)
+int add_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, struct Matrix_t* result)
 {
     if (!m1)
     {
@@ -539,7 +537,7 @@ int add_matrices(struct Matrix_t* m1, struct Matrix_t* m2, struct Matrix_t* resu
     return 1;
 }
 
-int substract_matrices(struct Matrix_t* m1, struct Matrix_t* m2, struct Matrix_t* result)
+int substract_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, struct Matrix_t* result)
 {
     if (!m1)
     {
@@ -612,4 +610,313 @@ int substract_matrices(struct Matrix_t* m1, struct Matrix_t* m2, struct Matrix_t
     }
     
     return 1;
+}
+
+int multiply_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, struct Matrix_t* result)
+{
+    if (!m1)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+    if (!m1->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+    if (!m1->rows)
+    {
+        DEBUG_PRINT("Rows pointer is null\n");
+        return 0;
+    }
+
+    if (!m2)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }    
+    if (!m2->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+    if (!m2->rows)
+    {
+        DEBUG_PRINT("Rows pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result matrix pointer is null\n");
+        return 0;
+    }
+    if (!result->size)
+    {
+        DEBUG_PRINT("Result matrix dimensions pointer is null\n");
+        return 0;
+    }
+    if (!result->rows)
+    {
+        DEBUG_PRINT("Result rows pointer is null\n");
+        return 0;
+    }
+
+
+    if (m1->size[1] != m2->size[0])
+    {
+        DEBUG_PRINT("Matrices do not compatible dimensions\n");
+        return -1;
+    }
+
+    for (int i = 0; i < result->size[0]; i++)
+    {
+        for (int j = 0; j < result->size[1]; j++)
+        {
+            double res = 0;
+            for (int k = 0; k < m1->size[1]; k++)
+            {
+                res += m1->rows[i][k] * m2->rows[k][j];
+            }
+            result->rows[i][j] = res;
+        }
+    }
+    
+    return 1;
+}
+
+int determinant(const struct Matrix_t* matrix, double* result)
+{
+    if (!matrix)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+    if (!matrix->size)
+    {
+        DEBUG_PRINT("Matrix dimensions pointer is null\n");
+        return 0;
+    }
+    if (!matrix->rows)
+    {
+        DEBUG_PRINT("Matrix rows pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result pointer is null\n");
+        return 0;
+    }
+
+
+    int sq = -1;
+    if (!is_squared(matrix, &sq))
+    {
+        DEBUG_PRINT("Error when checking for squareness of matrix\n");
+        return 0;
+    }
+
+    if (sq != 1)
+    {
+        DEBUG_PRINT("Matrix is not squared\n");
+        return 0;
+    }
+
+    if (matrix->size[0] == 1)
+    {
+        *result = **matrix->rows;
+    }
+    else if (matrix->size[0] == 2)
+    {
+        *result = matrix->rows[0][0] * matrix->rows[1][1] - matrix->rows[0][1] * matrix->rows[1][0];
+    }
+    else // Apply Laplace expansion
+    {
+        double det = 0;
+        size_t nsize[2] = {matrix->size[0] - 1, matrix->size[1] - 1};
+        struct Matrix_t* ndet = alloc_matrix(nsize); // Temp matrix
+        if (!ndet)
+        {
+            DEBUG_PRINT("Error allocating temp memory\n");
+            return 0;
+        }
+
+        for (int k = 0; k < matrix->size[0]; k++) // For every element in first column
+        {
+            int counter = 0;
+            for (int i = 1; i < matrix->size[0]; i++) // Create its "minor"
+            {
+                int inner_counter = 0;
+                for (int j = 0; j < matrix->size[0]; j++)
+                {
+                    if (j == k)
+                        continue;
+
+                    ndet->rows[counter][inner_counter] = matrix->rows[i][j];
+                    inner_counter++;
+                }
+                counter++;
+            }
+
+            double temp = 0;
+            if (!determinant(ndet, &temp))
+            {
+                DEBUG_PRINT("Error calculating inner determinant\n");
+                if (!free_matrix(ndet))
+                {
+                    DEBUG_PRINT("Error freeing memory!\n");
+                }
+                return 0;
+            }
+
+            if (k % 2 == 0)
+            {
+                det += temp * matrix->rows[0][k];
+            }
+            else
+            {
+                det -= temp * matrix->rows[0][k];
+            }
+        }
+        
+        if (!free_matrix(ndet))
+        {
+            DEBUG_PRINT("Error freeing memory!\n");
+            return 0;
+        }
+
+        *result = det;
+    }
+    return 1;
+}
+
+int transpose(const struct Matrix_t* matrix, struct Matrix_t* result)
+{
+    if (!matrix)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+    if (!matrix->size)
+    {
+        DEBUG_PRINT("Matrix dimensions pointer is null\n");
+        return 0;
+    }
+    if (!matrix->rows)
+    {
+        DEBUG_PRINT("Matrix rows pointer is null\n");
+        return 0;
+    }
+
+
+    if (matrix->size[0] != result->size[1] || matrix->size[1] != result->size[0])
+    {
+        DEBUG_PRINT("Incorrect result matrix size\n");
+        return 0;
+    }
+
+    
+    for (int i = 0; i < result->size[0]; i++)
+    {
+        for (int j = 0; j < result->size[1]; j++)
+        {
+            result->rows[i][j] = matrix->rows[j][i];
+        }
+    }
+
+    return 1;
+}
+
+
+int is_squared(const struct Matrix_t* matrix, int* result)
+{
+    if (!matrix)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+
+    if (!matrix->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result pointer is null\n");
+        return 0;
+    }
+
+    *result = matrix->size[0] == matrix->size[0];
+    
+    return 1;
+}
+
+int is_same_dimensions(const struct Matrix_t* m1, const struct Matrix_t* m2, int* result)
+{
+    if (!m1)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }    
+    if (!m1->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+
+    if (!m2)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }    
+    if (!m2->size)
+    {
+        DEBUG_PRINT("Dimensions pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result pointer is null\n");
+        return 0;
+    }
+
+    *result = m1->size[0] == m2->size[0] && m1->size[1] == m2->size[1];
+    return 1;
+}
+
+int minor(const struct Matrix_t* matrix, int row, int col, double* result)
+{
+    if (!matrix)
+    {
+        DEBUG_PRINT("Matrix pointer is null\n");
+        return 0;
+    }
+    if (!matrix->size)
+    {
+        DEBUG_PRINT("Matrix dimensions pointer is null\n");
+        return 0;
+    }
+    if (!matrix->rows)
+    {
+        DEBUG_PRINT("Matrix rows pointer is null\n");
+        return 0;
+    }
+
+    if (!result)
+    {
+        DEBUG_PRINT("Result pointer is null\n");
+        return 0;
+    }
+
+    if (row < 0 || col < 0)
+    {
+        DEBUG_PRINT("Invalid indices\n");
+        return 0;
+    }
+
+    
 }
