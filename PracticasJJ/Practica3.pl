@@ -10,12 +10,12 @@ partir([H|T], L1, [H|T2], N) :- H > N, partir(T, L1, T2, N).
 quicksort([], []).
 quicksort(L, OL) :- L = [N|T], partir(L, L1, L2),
 						quicksort(L1, LO1), quicksort(L2, LO2), 
-						append(LO1, [N|[]], X), append(X, LO2, OL).
+						append(LO1, [N], X), append(X, LO2, OL).
 
 
 						
 						
-mergesort([T|[]], [T|[]]).
+mergesort([T], [T]).
 mergesort(L, OL) :- append(L1, L2, L), length(L, X), length(L1, Y), Y is X//2,
 					mergesort(L1, OL1), mergesort(L2, OL2), merge(OL1, OL2, OL).
 
