@@ -11,7 +11,7 @@ DIRLIB := lib/
 DIRHEA := include/
 DIRSRC := src/
 
-all: dirs helloworld
+all: dirs matlog
 
 debug: CCFLAGS += -DDEBUG -g
 debug: all
@@ -19,7 +19,7 @@ debug: all
 dirs:
 	mkdir -p $(DIROBJ) $(DIRLIB)
 
-helloworld: $(DIROBJ)helloworld.o $(DIROBJ)matlog.o $(DIROBJ)debug.o
+matlog: $(DIROBJ)matpl.o $(DIROBJ)matlog.o $(DIROBJ)debug.o
 	$(CC) -shared -o $@ $^
 	
 test: $(DIRSRC)test.cpp
