@@ -590,14 +590,14 @@ pl_is_same_dimensions(term_t m1, term_t m2)
 install_t
 install()
 {
-	PL_register_foreign("sum_elements", 2, pl_sum_elements_matrix, 0);
-	PL_register_foreign("add_matrices", 3, pl_add_matrices, 0);
-	PL_register_foreign("substract_matrices", 3, pl_substract_matrices, 0);
-	PL_register_foreign("multiply_matrices", 3, pl_multiply_matrices, 0);
-	PL_register_foreign("multiply_matrix", 3, pl_multiply_matrix, 0);
-	PL_register_foreign("determinant", 2, pl_determinant_matrix, 0);
-	PL_register_foreign("transpose", 2, pl_transpose_matrix, 0);
-	PL_register_foreign("inverse", 2, pl_inverse_matrix, 0);
+	PL_register_foreign("mat_sum", 2, pl_sum_elements_matrix, 0);
+	PL_register_foreign("sum_mat", 3, pl_add_matrices, 0);
+	PL_register_foreign("res_mat", 3, pl_substract_matrices, 0);
+	PL_register_foreign("mult_mat", 3, pl_multiply_matrices, 0);
+	PL_register_foreign("mult_mat_factor", 3, pl_multiply_matrix, 0);
+	PL_register_foreign("determinant_mat", 2, pl_determinant_matrix, 0);
+	PL_register_foreign("transpose_mat", 2, pl_transpose_matrix, 0);
+	PL_register_foreign("inverse_mat ", 2, pl_inverse_matrix, 0);
 	PL_register_foreign("is_squared", 1, pl_is_squared, 0);
-	PL_register_foreign("is_same_dimensions", 2, pl_is_same_dimensions, 0);
+	PL_register_foreign("same_dimensions", 2, pl_is_same_dimensions, 0);
 }
