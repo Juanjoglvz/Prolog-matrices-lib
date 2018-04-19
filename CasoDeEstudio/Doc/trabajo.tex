@@ -134,7 +134,13 @@ Antes de mostrar cómo se implementan predicados externos en C y C++, vamos a ve
 \subsubsection{Ejecución}
 \subsection{C++11}
 \subsubsection{Compilación}
+En el caso de C++, la compilación se realiza de forma similar. En este caso, es necesario usar el enlazador de SWI-Prolog a la vez del compilador de C++ para que la compilación se realice correctamente.
+
+swipl-ld -shared -ld g++ -cc-options[" -std=c++11"
+
+En este caso se usa la flag -cc-options del enlazador de SWI-Prolog para indicarlo al compilador de C++ que use el estándar C++11, para poder utilizar sus librerías y sus punteros inteligentes.
 \subsubsection{Ejecución}
+La ejecución usando la interfaz de C++ es similar a la de C, porque ésta interfaz está basada en la de C. Aunque, como luego veremos, la interfaz de C++ no tenga función de instalación, la macro que se va a usar para definir predicados externos, realiza procesos transparentes al programador que generan dicho función de instalación. Debido a esto, el flujo de ejecución es similar.
 
 
 \section{Implementación de predicados externos}
@@ -367,8 +373,12 @@ Las funciones utilizadas para la creación de esta lista ya han sido discutidas 
 En esta sección se va a presentar un ejemplo concreto y concreto de la biblioteca dinámica que hemos desarrollado. El ejemplo constará de los siguientes predicados externos:
 
 \begin{itemize}
-\item \textbf{sum\_mat(+Matriz1, +Matriz2, -MatrixResultado)}. Suma cada uno de los componentes de ambas matrices, y nos devuelve el resultado en una nueva matriz.
-\item \textbf{mult\_mat(+Matriz1, +Matriz2, -MatrixResultado)}. Realiza la multiplicación de matriz1 y matriz2 y nos devuelve el resultado en una nueva matriz.
+\item \textbf{sum\_mat(+Matriz1, +Matriz2, -MatrixResultado)}. Suma cada uno de los componentes de ambas matrices, y nos devuelve el resultado en una nueva matriz. Ejemplo:
+
+\includegraphics[scale=0.6]{EjemploSuma.jpeg}
+\item \textbf{mult\_mat(+Matriz1, +Matriz2, -MatrixResultado)}. Realiza la multiplicación de matriz1 y matriz2 y nos devuelve el resultado en una nueva matriz. Ejemplo:
+
+\includegraphics[scale=0.6]{EjemploMult.jpeg}
 \end{itemize}
 
 Además de estas operaciones, se han implementado multitud más de operaciones con matrices que se pueden encontrar en el código fuente adjunto, tanto en C como en C++.
@@ -674,6 +684,8 @@ int row_to_list(double *row, size_t length, term_t list)
 \end{lstlisting}
 
 \subsubsection{Sesión de ejemplo}
+
+\includegraphics[scale=0.6]{Sesion.jpeg}
 
 \section{Referencias}
 \begin{flushleft}
