@@ -2,7 +2,11 @@
 #include <string.h>
 #include <math.h>
 
-struct Matrix_t* alloc_matrix(const size_t size[static 2])
+/*
+    Allocates a new matrix with size size
+    Returns a valid matrix pointer on success and NULL on failure
+*/
+struct Matrix_t* alloc_matrix(const size_t size[2])
 {
     if (!size)
     {
@@ -64,6 +68,10 @@ struct Matrix_t* alloc_matrix(const size_t size[static 2])
 
 }
 
+/*
+    Copies the contents of matrix src to a newly allocated matrix
+    Returns a valid matrix pointer on success and NULL on failure
+*/
 struct Matrix_t* copy_matrix(const struct Matrix_t* src)
 {
     if (!src)
@@ -107,6 +115,7 @@ struct Matrix_t* copy_matrix(const struct Matrix_t* src)
 /*
     Frees the memory used by a matrix pointer, any row-data NULL pointers
     will be ignored to avoid double-free memory corruption.
+    Returns 1 on success and 0 on failure (NULL matrix/size pointer)
 */
 int free_matrix(struct Matrix_t* matrix)
 {
@@ -147,7 +156,7 @@ int free_matrix(struct Matrix_t* matrix)
     array, the first element is the number of rows, the second the
     number of columns
 */
-int is_matrix(const term_t list, size_t dimensions[static 2])
+int is_matrix(const term_t list, size_t dimensions[2])
 {
     if (!dimensions)
     {
@@ -244,6 +253,12 @@ int is_matrix(const term_t list, size_t dimensions[static 2])
     return (int) rows;
 }
 
+/*
+    Parses a SWI-Prolog term that represents a list to Matrix_t type
+    A single-row matrix is represented with a nested list instead of
+    a single list.
+    Returns a valid matrix pointer on success and NULL on failure
+*/
 struct Matrix_t* list_to_matrix(const term_t list)
 {
     size_t dims[2] = {0, 0};
@@ -261,6 +276,7 @@ struct Matrix_t* list_to_matrix(const term_t list)
     if (!matrix)
     {
         DEBUG_PRINT("Couldnt allocate new matrix\n");
+        return NULL;
     }
 
     size_t rows = dims[0];
@@ -300,6 +316,11 @@ struct Matrix_t* list_to_matrix(const term_t list)
     return matrix;
 }
 
+/*
+    Parses a SWI-Prolog term that represents a list to a array of doubles
+    Any integers are converted to doubles.
+    Returns 1 on success and 0 on failure (NULL pointers / terms not lists)
+*/
 int list_to_row(const term_t list, size_t length, double* row)
 {
     if (!row)
@@ -352,6 +373,10 @@ int list_to_row(const term_t list, size_t length, double* row)
     return 1;
 }
 
+/*
+    Converts a matrix to a SWI-Prolog term that represents a list of lists
+    Returns 1 on success and 0 on failure (NULL pointers / terms not lists)
+*/
 int matrix_to_list(const struct Matrix_t* matrix, term_t list)
 {
     if (!matrix)
@@ -401,6 +426,10 @@ int matrix_to_list(const struct Matrix_t* matrix, term_t list)
     
 }
 
+/*
+    Converts an array of doubles to a SWI-Prolog term that represents a list
+    Returns 1 on success and 0 on failure (NULL pointers / terms not lists)
+*/
 int row_to_list(double* row, size_t length, term_t list)
 {
     if (!row)
@@ -432,7 +461,10 @@ int row_to_list(double* row, size_t length, term_t list)
     return 1;
 }
 
-
+/*
+    Sums all the elements of a matrix and stores the result on a pointer to a double
+    Returns 1 on success and 0 on failure (NULL pointers)
+*/
 int sum_elements(const struct Matrix_t* matrix, double* result)
 {
     if (!matrix)
@@ -465,6 +497,10 @@ int sum_elements(const struct Matrix_t* matrix, double* result)
     return 1;
 }
 
+/*
+    Sums two matrices 
+    Returns 1 on success and 0 on failure (NULL pointers / incompatible dimensions)
+*/
 int add_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, struct Matrix_t* result)
 {
     if (!m1)
@@ -526,7 +562,7 @@ int add_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, struct Ma
     if (!same_dims)
     {
         DEBUG_PRINT("Matrices do not have the same dimensions\n");
-        return -1;
+        return 0;
     }
 
     for (int i = 0; i < result->size[0]; i++)
@@ -540,6 +576,10 @@ int add_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, struct Ma
     return 1;
 }
 
+/*
+    Substracts two matrices 
+    Returns 1 on success and 0 on failure (NULL pointers / incompatible dimensions)
+*/
 int substract_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, struct Matrix_t* result)
 {
     if (!m1)
@@ -601,7 +641,7 @@ int substract_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, str
     if (!same_dims)
     {
         DEBUG_PRINT("Matrices do not have the same dimensions\n");
-        return -1;
+        return 0;
     }
 
     for (int i = 0; i < result->size[0]; i++)
@@ -615,6 +655,10 @@ int substract_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, str
     return 1;
 }
 
+/*
+    Multiplies two matrices 
+    Returns 1 on success and 0 on failure (NULL pointers / incompatible dimensions)
+*/
 int multiply_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, struct Matrix_t* result)
 {
     if (!m1)
@@ -669,7 +713,7 @@ int multiply_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, stru
     if (m1->size[1] != m2->size[0])
     {
         DEBUG_PRINT("Matrices do not compatible dimensions\n");
-        return -1;
+        return 0;
     }
 
     for (int i = 0; i < result->size[0]; i++)
@@ -688,6 +732,10 @@ int multiply_matrices(const struct Matrix_t* m1, const struct Matrix_t* m2, stru
     return 1;
 }
 
+/*
+    Multiplies a matrix by a factor
+    Returns 1 on success and 0 on failure (NULL pointers)
+*/
 int multiply_matrix(const struct Matrix_t* matrix, double factor, struct Matrix_t* result)
 {
     if (!matrix)
@@ -746,6 +794,10 @@ int multiply_matrix(const struct Matrix_t* matrix, double factor, struct Matrix_
     return 1;
 }
 
+/*
+    Computes the determinant of a nxn matrix 
+    Returns 1 on success and 0 on failure (NULL pointers / incompatible dimensions)
+*/
 int determinant(const struct Matrix_t* matrix, double* result)
 {
     if (!matrix)
@@ -811,6 +863,10 @@ int determinant(const struct Matrix_t* matrix, double* result)
     return 1;
 }
 
+/*
+    Computes the transpose of a matrix
+    Returns 1 on success and 0 on failure (NULL pointers)
+*/
 int transpose(const struct Matrix_t* matrix, struct Matrix_t* result)
 {
     if (!matrix)
@@ -848,6 +904,10 @@ int transpose(const struct Matrix_t* matrix, struct Matrix_t* result)
     return 1;
 }
 
+/*
+    Computes the inverse of a matrix by the method of the matrix of cofactors
+    Returns 1 on success and 0 on failure (NULL pointers / incompatible dimensions)
+*/
 int inverse(const struct Matrix_t* matrix, struct Matrix_t* result)
 {
     if (!matrix)
@@ -992,6 +1052,10 @@ int inverse(const struct Matrix_t* matrix, struct Matrix_t* result)
 }
 
 
+/*
+    Checks if a matrix is squared and returns the result on a pointer to int
+    Returns 1 on success and 0 on failure (NULL pointers)
+*/
 int is_squared(const struct Matrix_t* matrix, int* result)
 {
     if (!matrix)
@@ -1017,6 +1081,11 @@ int is_squared(const struct Matrix_t* matrix, int* result)
     return 1;
 }
 
+/*
+    Checks if two matrices have the same dimensions
+    returns the result on a pointer to int
+    Returns 1 on success and 0 on failure (NULL pointers)
+*/
 int is_same_dimensions(const struct Matrix_t* m1, const struct Matrix_t* m2, int* result)
 {
     if (!m1)
@@ -1051,6 +1120,10 @@ int is_same_dimensions(const struct Matrix_t* m1, const struct Matrix_t* m2, int
     return 1;
 }
 
+/*
+    Computes the adjoint of a nxm matrix where n,m>1
+    Returns 1 on success and 0 on failure (NULL pointers)
+*/
 int adjoint(const struct Matrix_t* matrix, int row, int col, double* result)
 {
     if (!matrix)
@@ -1075,9 +1148,15 @@ int adjoint(const struct Matrix_t* matrix, int row, int col, double* result)
         return 0;
     }
 
-    if (row < 0 || col < 0)
+    if (row < 0 || col < 0 || row >= matrix->size[0] || col >= matrix->size[1])
     {
         DEBUG_PRINT("Invalid indices\n");
+        return 0;
+    }
+
+    if (matrix->size[0] == 1 || matrix->size[1] == 1)
+    {
+        DEBUG_PRINT("Invalid matrix size\n");
         return 0;
     }
 
