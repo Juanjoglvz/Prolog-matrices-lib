@@ -1,22 +1,75 @@
-\documentclass[a4paper]{article}
+\documentclass[a4paper,12pt]{article}
 
 \usepackage[a4paper, total={6in, 9.5in}]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[british]{babel}    
-    
+\usepackage[british]{babel}
 \usepackage{hyperref}
+\usepackage[gen]{eurosym}
 \usepackage{float}
+\usepackage{mathtools}
 \usepackage{amssymb}
 \usepackage{enumitem}
 \usepackage{lastpage}
 \usepackage{multirow}
 \usepackage{fancyhdr}
-\usepackage{amsmath}
-
+\usepackage{listings}
 
 \usepackage{graphicx}
 \graphicspath{{images/}}
+
+\usepackage{xcolor}
+\lstset{basicstyle=\ttfamily,
+  showstringspaces=false,
+  commentstyle=\color{red},
+  keywordstyle=\color{blue}
+}
+
+\usepackage{color}
+\definecolor{gray97}{gray}{.97}
+\definecolor{gray75}{gray}{.75}
+\definecolor{gray45}{gray}{.45}
+\definecolor{pblue}{rgb}{0.13,0.13,1}
+\definecolor{pgreen}{rgb}{0,0.5,0}
+\definecolor{pred}{rgb}{0.9,0,0}
+\definecolor{pgrey}{rgb}{0.46,0.45,0.48}
+
+\usepackage{listings}
+\lstset{framerule=0pt,
+	aboveskip=0.5cm,
+	framextopmargin=3pt,
+	framexbottommargin=3pt,
+	framexleftmargin=0.4cm,
+	framesep=0pt,
+	rulesep=0.4pt,
+	backgroundcolor=\color{gray97},
+	rulesepcolor=\color{black},
+	texcl=true,
+	stringstyle=\ttfamily,
+	%
+	basicstyle=\ttfamily,
+	keywordstyle=\color{blue}\ttfamily,
+	stringstyle=\color{red}\ttfamily,
+	commentstyle=\color{pgreen}\ttfamily,
+	morecomment=[l][\color{magenta}]{\#}
+	%
+	numbers=left,
+	numbersep=15pt,
+	numberstyle=\scriptsize,
+	numberfirstline=false,
+	breaklines=true,
+}
+
+\lstnewenvironment{listing}[1][]
+	{\lstset{#1}\pagebreak[0]}{\pagebreak[0]}
+\lstdefinestyle{consola}
+	{basicstyle=\scriptsize\bf\ttfamily,
+		backgroundcolor=\color{gray75},
+	}
+\lstdefinestyle{C++}
+	{language=C++,
+	}
+
 
 \pagestyle{fancy}
 
@@ -48,37 +101,587 @@
 \clearpage
 
 \section{Introducción}
-\subsection{Bibliotecas estáticas y dinámicas} %???
+
+Este documento explica cómo utilizar las interfaces de SWI-Prolog con el lenguaje C[1] y con el lenguaje C++[2], para crear funciones en dichos lenguajes que puedan ser llamados desde un programa Prolog, del mismo modo que se llamaría a un predicado de Prolog y de forma transparente.
+
+Estas funciones y predicados externos se realizan sobre la interfaz que SWI-Prolog nos proporciona, tanto en C como en C++, con una gran cantidad de tipos y funciones para manipular los tipos de Prolog, así como comunicarse con el núcleo de Prolog.
+
+Este documento se centrará especialmente en la librería interfaz con el lenguaje C, y después se hará una comparación menos exhaustiva con la librería interfaz de C++, centrándonos especialmente en sus diferencias, ventajas y desventajas de cada una de ellas.
+\subsection{Bibliotecas estáticas y dinámicas}
+
+Los predicados externos que se quieran utilizar en Prolog deben agruparse en una librería externa. Estas librerías pueden ser:
+
+\begin{itemize}
+\item \textbf{Librería estática}. Las librerías estáticas se enlazan al fichero Prolog en tiempo de compilación, de manera que el archivo resultado de compilar los predicados externos consiste en un ejecutable que contiene tanto a dichos predicados como el núcleo de Prolog. De esta forma todos los predicados externos que hayamos definido en nuestro lenguaje de elección ya forman parte del entorno, y no es necesario cargarlos a posteriori.
+\item \textbf{Librería dinámica}. Las librerías dinámicas se enlazan en tiempo de ejecución, y no de compilación. Esto quiere decir que el resultado de compilar nuestros predicados externos consistirá en un archivo con extensión de librería dinámica (En un Sistema Operativo Linux tendrán la extensión \textit{.so}, y en un Sistema Operativo tendrán extensión \textit{.dll}). Este fichero deberá cargarse desde un entorno de Prolog en funcionamiento con el predicado de SWI-Prolog   \textit{load\_foreign\_library/1}, cuyo argumento es el nombre de la librería.
+\end{itemize}
+
+Desde el punto de vista de la implementación de nuestros predicados externos, no influye la elección del tipo de librería que queramos desarrollar. El código fuente no cambiará.
+
+En este documento se discutirán solo la creación de librerías dinámicas para SWI-Prolog.
 \subsection{Predicados deterministas y no deterministas}
+
+SWI-Prolog permite la implementación de predicados externos deterministas y no deterministas. Los predicados deterministas son aquellos que no permiten puntos de elección y sólo tienen éxito una vez, mientras que los no deterministas permiten varios puntos de elección, y pueden tener éxito al ser reevaluados en otro punto de elección. Sin embargo, nosotros sólo nos centraremos en la implementación de predicados deterministas, puesto que los predicados externos no deterministas son mucho más complejos, puesto que necesitan mantener información del contexto entre las diferentes llamadas al predicado externo para computar todas sus soluciones.
 
 
 \section{Compilación y ejecución de bibliotecas dinámicas}
-\subsection{Compilación}
-\subsection{Ejecución}
+
+Antes de mostrar cómo se implementan predicados externos en C y C++, vamos a ver primero el proceso de compilado y enlazado de las librerías generadas.
+\subsection{C}
+\subsubsection{Compilación}
+\subsubsection{Ejecución}
+\subsection{C++11}
+\subsubsection{Compilación}
+\subsubsection{Ejecución}
 
 
 \section{Implementación de predicados externos}
-\subsection{Definición de predicados externos}
-\subsection{Función de instalación}
-\subsection{El tipo \texttt{term\_t}}
-\subsection{Análisis y construcción de términos}
+
+En esta sección se presentan las características que deben tener nuestras funciones para ser consideradas predicados externos, además de algunas de las funciones C más importantes de C y C++ para comunicarse con Prolog y manejar sus términos. Más información en los manuales de referencia [1][2].
+
+Aunque no se discutirán todas las operaciones implementadas, el listado completo de todas las operaciones que la librería contiene, tanto en C como en C++, es el siguiente:
+
+\begin{itemize}
+\item \textbf{is\_squared(+Matriz)}. Devuelve verdadero si la matriz es cuadrada, y falso en caso contrario.
+\item \textbf{same\_dimensions(+Matriz1, +Matriz2)}. Devuelve verdadero si matriz1 y matriz2 tienen el mismo número de filas y columnas, y falso en caso contrario.
+\item \textbf{mat\_sum(+Matriz, -sum)}. Devuelve la suma de todos los elementos de la matriz.
+\item \textbf{sum\_mat(+Matriz1, +Matriz2, -MatrizResultado)}. Devuelve la matriz resultado de sumar matriz1 con matriz2.
+\item \textbf{res\_mat(+Matriz1, +Matriz2, -MatrizResultado)}. Devuelve la matriz resultado de restar matriz1 con matriz2.
+\item \textbf{mult\_mat\_factor(+Matriz, +factor, -MatrizResultado)}. Devuelve la matriz resultado de multiplicar matriz1 por un número.
+\item \textbf{mult\_mat(+Matriz1, +Matriz2, -MatrizResultado)}. Devuelve la matriz resultado de multiplicar matriz1 con matriz2.
+\item \textbf{transpose\_mat(+Matriz, -MatrizResultado)}. Devuelve la matriz resultado de transponer la matriz de entrada.
+\item \textbf{determinant\_mat(+Matriz, -Determinante)}. Devuelve el determinante de la matriz de entrada, si lo tiene.
+\item \textbf{inv\_mat(+Matriz, -MatrizInversa)}. Devuelve la matriz inversa de la matriz de entrada, si la tiene.
+\end{itemize}
+\subsection{C}
+\subsubsection{Definición de predicados externos}
+\subsubsection{Función de instalación}
+\subsubsection{El tipo \texttt{term\_t}}
+\subsubsection{Análisis y construcción de términos}
 \subsubsection{Comprobación de tipos}
 \subsubsection{Términos simples}
 \subsubsection{Términos compuestos}
 \subsubsection{Listas}
-\subsection{Llamadas a predicados Prolog}
-\subsection{Otras funciones}
+\subsubsection{Llamadas a predicados Prolog}
+\subsubsection{Otras funciones}
 
 
-\section{Ejemplo}
-\subsection{Archivo \texttt{install.c}}
-\subsection{Archivo  \texttt{mult\_list.c}}
-\subsection{Archivo  \texttt{count\_string.c}}
-\subsection{Script de compilación}
-\subsection{Sesión de ejemplo}
+\subsection{C++11}
+\subsubsection{Definición de predicados externos}
+Al igual que en C, una biblioteca externa puede tener tantos predicados externos como se desee. Cada uno de ellos estará asociado a un bloque de código. Ésta es la primera diferencia que tenemos con respecto a la interfaz con C, nuestros predicados no serán funciones C++, si no bloques de código. Sin embargo, el flujo de ejecución es el mismo que en la interfaz de C: después de cargar la librería dinámica mediante el predicado \textit{load\_foreign\_library/1}, e invocar uno de los predicados externos, se cede el control al bloque de código C++, que al finalizar, devuelve el control a Prolog.
 
+Los bloques de código de C++ asociados a un predicado externo estarán marcados mediante la macro PREDICATE(name, arity). En esta macro se establece:
+
+\begin{itemize}
+\item El nombre del predicado que se invocará en Prolog.
+\item La aridad, es decir, el número de argumentos que tomará el predicado.
+\end{itemize}
+
+Con esta macro ya hemos realizado toda la instalación del bloque de código, y ya puede ser llamado desde Prolog. En realidad, la macro lo que está haciendo por nosotros es envolver todo el boque de código designado mediante una función con tipo de retorno \textit{foreignt\_t}, con el número de argumentos que le hemos establecido de tipo PlTerm (más adelante aclararemos qué es este tipo), y también genera la función de instalación para este bloque. Esto quiere decir que no tenemos que preocuparnos por ninguno de estos temas cuando usemos dicha macro.
+
+Estos bloque de código deberán retornar siempre TRUE, si el predicado ha tenido un resultado exitoso, o FALSE si ha fallado.
+
+Además, podemos acceder a los argumentos de nuestro predicado mediante las macros $A_n$, siendo $n$ el número del argumento que accedemos. Por ejemplo, si queremos acceder al primer argumento, podemos acceder a él mediante $A_1$, variable de tipo PlTerm.
+
+Ejemplo de predicado externo en el que se devuelve FALSE si la matriz pasada como argumento no es cuadrada, y TRUE si sí lo es:
+
+\begin{lstlisting}[style=C++]
+PREDICATE(is_squared, 1)
+{
+	std::unique_ptr<Matrix> m1(list_to_Matrix(A1));
+	
+	if (m1.get() == nullptr || !m1->isSquared())
+	{
+		return FALSE;
+	}
+	
+	return TRUE;
+}
+\end{lstlisting}
+
+Algunas de las funciones que aparecen en el ejemplo serán discutidas más adelante (como por ejemplo \textit{list\_to\_Matrix}).
+
+\subsubsection{El tipo \texttt{PlTerm}}
+
+En la interfaz de C++, que recordamos es totalmente compatible con la interfaz de C, tenemos a nuestra disposición un tipo más abstracto de datos que nos permite manipular términos de Prolog. Éste es el tipo $PlTerm$, una clase definida en la interfaz de C++. Las macros de nuestros argumentos $A_n$ son de este tipo.
+
+Los tipos $PlTerm$ contienen una referencia a un término de prólog, al igual que el tipo \textit{term\_t}, pero nos da un nivel mayor de abstracción que más tarde discutiremos. 
+
+En caso de que queramos construir un nuevo término de Prolog, podemos hacerlo mediante múltiple constructores a nuestra disposición, entre los que se incluyen:
+\begin{itemize}
+\item PlTerm::PlTerm(). Crea una nueva referencia a un término de Prolog sin inicializar.
+\item PlTerm::PlTerm(\textit{term\_t}. Con el que podemos convertir un tipo de término de la interfaz de C a un tipo de la interfaz C++.
+\item PlTErm::PlTerm(double d). Con el que podemos crear una referencia a un término de prolog que contiene el número en punto flotante d.
+\end{itemize}
+
+Además también tenemos el tipo $PlTermv$, que consiste en un vector de $PlTerm$. Este tipo tiene sobrecargado el operador ( ) para poder acceder a cualquier de los términos que contiene, empezando en 0. Sin embargo, este tipo es principalmente usado para pasar argumentos en llamadas desde C++ a Prolog. Esto será discutido más adelante.
+
+Una de las cosas más importante que ofrece la clase $PlTerm$ es la sobrecarga del operador $=$. En el caso de que usemos el operador $=$ con un $PlTerm$, no estaremos asignando, sino unificando un valor con dicho término. Por lo tanto la operación $=$ devuelve un valor booleano verdadero si la unificación fue un éxito, o uno falso si la unificación falló. Esto es importante porque, al igual que en Prolog, una vez unificado un término dentro de nuestro predicado, no se puede volver a unificar con algo distinto. En este caso devolvería un valor falso y el bloque de código continuaría.
+
+A continuación un ejemplo de creación de términos, así como uno de unificación.
+
+\begin{lstlisting}[style=C++]
+PlTerm term1(); //Crea una referencia vacía a un término
+
+PlTerm term2(2.0); //Crea una referencia al término 2.0
+\end{lstlisting}
+
+\begin{lstlisting}[style=C++]
+PREDICATE(mat_sum, 2)
+{
+    std::unique_ptr<Matrix> m1(list_to_Matrix(A1));
+	
+	if (m1.get() == nullptr)
+	{
+		return FALSE;
+	}
+	
+	return A2 = m1->sum(); //Devolveremos verdadero si el término A2 se puede unificar con la suma de la matriz m1
+}
+\end{lstlisting}
+
+\subsubsection{Casteo de tipos y excepciones}
+
+Una de las cosas más potentes que nos ofrece la interfaz de C++ con respecto a la de C es el casteo de tipos. Esto consiste en convertir uno de nuestros términos $PlTerm$ en una valor de C++, como por ejemplo un valor en punto flotante. En el siguiente ejemplo se puede ver una instrucción perfectamente válida.
+
+\begin{lstlisting}[style=C++]
+PREDICATE(sum, 2)
+{
+	
+	double value = (double) A1 + 2.0;
+	
+	PlTerm ret_term(value);
+	
+	return A2 = ret_term;
+}
+\end{lstlisting}
+
+Sin embargo, los términos no tienen por qué ser un valor en punto flotante, por lo que el casteo fallaría. En este caso, las excepciones entran en juego.
+En el caso anterior, si llamaramos al predicado sum/2 , siendo el primer argumento $a$, la instrucción $(double) A1$ lanzaría una excepción de tipo $PlTypeError$, excepción que se lanza cuando cualquier casteo falla. La interfaz además implementa más tipos de excepciones:
+
+\begin{itemize}
+\item PlTypeError: excepción lanzada cuando un termino no satisface el tipo esperado por Prolog. Como se ha definido antes, es el tipo que se lanza en el casteo fallido, pero también en otras llamadas a la interfaz que veremos más adelante.
+\item PlDomainError: excepción lanzada cuando un termino satisface el tipo esperado de Prolog, pero no es aceptable para el dominio esperado por una operación. Por ejemplo, la llamada al predicado de Prolog open/3 espera un \textit{io\_mode}(leer, escribir, etc). Si se pasa como argumento un entero, es un error de tipo y se lanzaría la excepción PlTypeError. Sin embargo, si se pasa un átomo distinto a los \textit{io\_mode}, se lanza una PlDomainError.
+\item PlException: Esta subclase de PlTerm actúa como clase padre de las demás excepciones, y nos permite definir nuestras propias excepciones. También la podemos usar como excepción general para capturar las excepciones lanzadas por Prolog en un bloque try-catch.
+\end{itemize}
+
+Es importante conocer que todas estas excepciones son lanzadas desde C++, y por tanto pueden ser controladas desde el mismo bloque de instrucciones que forma el predicado externo.
+
+Ahora procedemos a realizar el mismo ejemplo que antes, pero esta vez cerciorándonos que controlamos todas los posibles escenarios.
+
+\begin{lstlisting}[style=C++]
+PREDICATE(sum, 2)
+{
+	try{
+		double value = (double) A1 + 2.0;
+	}
+	catch (PlException &ex)
+	{
+		std::cout << "El primer termino debe ser un numero" << std::endl;
+		return FALSE;
+	}
+	PlTerm ret_term(value);
+	
+	return A2 = ret_term;
+}
+\end{lstlisting}
+
+En este nuevo predicado, si el usuario introduce como primer argumento un término que no sea un número, el casteo lanzará una excepción que capturaremos. Le comunicamos al usuario el error y devolvemos false, en lugar de dejar que Prolog cese su ejecución.
+
+\subsubsection{El tipo \texttt{PlTail}}
+
+La clase que la interfaz nos ofrece para manipular listas de prolog es $PlTail$. Este clase nos permite asignar una referencia una lista e iterar sobre ella. Algo importante a tener en cuenta es que el constructor:
+
+\begin{lstlisting}[style=C++]
+PlTail list(term);
+\end{lstlisting}
+
+Admite como parámetro un término del tipo PlTerm, pero este término debe ser ya una lista. Esto quiere decir que la interfaz no nos permite construir nuevas listas.
+
+La clase PlTail contiene las siguientes operaciones:
+
+\begin{itemize}
+\item PlTail::append(PlTerm \&term). Añade un término a la lista, poniéndose este nuevo término como nueva cabeza de la lista.
+\item PlTail::close(). Ésta función intenta unificar la lista con la lista vacía, devolviendo verdadero si la unificación ha tenido éxito, y falso en caso contrario.
+\item PlTail::next(PlTerm \&term). Éste método nos permitirá iterar sobra la lista, asignando al término que pasamos como argumento una referencia a la cabeza de la lista, y haciendo que $PlTail$ apunte al siguiente elemento. Esto quiere decir que cuando iteramos sobre la lista, estamos consumiendo los elementos, por lo que al final la variable PlTail quedará apuntando a una lista vacía.
+\end{itemize}
+
+A continuación se presenta un ejemplo característico del uso del tipo PlTail.
+
+\begin{lstlisting}[style=C++]
+PlTail list(term);
+
+
+PlTerm e1;
+
+while (list.next(e1)) {
+	content.push_back((double) e1);
+}
+\end{lstlisting}
+
+En el ejemplo anterior, se puede ver como se construye una lista a partir de un término, y después se itera sobre la lista, asignando la referencia de la cabeza de la lista en cada iteración a un término sin inicializar. Después casteamos dicho término a un número en punto flotante y lo agregamos a un vector. 
+
+Es importante tener en cuenta que si, en el ejemplo anterior, el término $term$ no fuese una lista, el constructor lanzaría una PlTypeError (excepción de tipo).
+\subsubsection{Llamadas a predicados Prolog}
+
+La interfaz de C++ también nos permite hacer llamadas a predicados de Prolog desde C++, pudiéndose así establecer una conversación entre sendos lenguajes.
+
+Para esto, la interfaz nos da la clase $PlQuery$, que nos permite definir una consulta a un predicado Prolog, así como obtener sus soluciones.
+
+los distintos constructores para la clase son los siguientes:
+\begin{itemize}
+\item PlQuery::PlQuery(const char* name, PlTermv \&av). Crea una consulta al predicado de nombre $name$, y le pasa como argumentos aquellos del vector $av$. La aridad del predicado que llamamos es deducida del vector de términos $av$, por lo que no tenemos que decírsela.
+\item PlQuery::PlQuery(const char* module, const char* name, PlTermv \&av). Realiza la misma construcción que el anterior, pero esta vez podemos indicarle el nombre del módulo en el que el predicado se encuentra.
+\end{itemize}
+
+La función que utilizaremos para obtener soluciones es $PlQuery::next\_solution()$, que llama al predicado y obtiene en el vector de argumentos la siguiente solución, si la hay.
+
+A continuación se presenta un ejemplo típico de uso:
+
+\begin{lstlisting}[style=C++]
+PREDICATE(average, 3)
+{ long sum = 0;
+  long n = 0;
+
+  PlQuery q("call", PlTermv(A2));
+  while( q.next_solution() )
+  { sum += (long)A1;
+    n++;
+  }
+  return A3 = (double)sum/(double)n;
+}
+\end{lstlisting}
+
+En este ejemplo utilizamos el predicado de orden superior call/1, de tal modo que podemos calcular la media de las soluciones que el segundo argumento, un predicado, nos de.
+
+\subsubsection{Construcción de una lista}
+
+Aunque se ha discutido anteriormente, es importante resaltar que la interfaz de C++ no nos ofrece la posibilidad de construir nuevas listas. Esto es debido a que la clase de la que disponemos para manipular listas, $PlTail$, admite en su constructor un término que ya sea una lista. Para solventarlo, hemos aprovechado la compatibilidad tanto de los lenguajes C y C++ como de las interfaces de dichos lenguajes, y hemos invocado a la interfaz de C. De este modo, conseguimos un término \textit{term\_t} que contiene la lista, y éste es el que usamos para construir nuestro PlTerm que vamos a unificar con la solución. 
+
+Las funciones utilizadas para la creación de esta lista ya han sido discutidas en la parte de C de este documento.
+
+\section{Ejemplos}
+
+En esta sección se va a presentar un ejemplo concreto y concreto de la biblioteca dinámica que hemos desarrollado. El ejemplo constará de los siguientes predicados externos:
+
+\begin{itemize}
+\item \textbf{sum\_mat(+Matriz1, +Matriz2, -MatrixResultado)}. Suma cada uno de los componentes de ambas matrices, y nos devuelve el resultado en una nueva matriz.
+\item \textbf{mult\_mat(+Matriz1, +Matriz2, -MatrixResultado)}. Realiza la multiplicación de matriz1 y matriz2 y nos devuelve el resultado en una nueva matriz.
+\end{itemize}
+
+Además de estas operaciones, se han implementado multitud más de operaciones con matrices que se pueden encontrar en el código fuente adjunto, tanto en C como en C++.
+
+El mayor esfuerzo ha sido situado en la comprobación de tipos, de tal modo que los predicados sean capaces de admitir cualquier tipo de término de Prolog y lograr una respuesta, aunque se evalúe el predicado a falso, en vez de cortar la ejecución de Prolog.
+
+\subsection{C}
+\subsubsection{sum\_mat}
+\subsubsection{mult\_mat}
+\subsection{C++}
+
+En la librería dinámica de C++, se ha logrado una gran modularización de las responsabilidades, de tal manera que todos los predicados constan de tres partes bien diferenciadas:
+\begin{itemize}
+\item \textbf{Conversión} los tipos de Prolog en una clase definida en C++ de matrices.
+\item \textbf{Obtención} de matriz resultado (u obtención de resultado en caso de que sea un predicado que devuelva un número), mediante operaciones propias de C++, utilizando la clase definida en C++.
+\item \textbf{Contrucción} de una nueva lista de Prolog a partir de la matriz resultado.
+\end{itemize}
+
+Esto provoca que el código de todos los predicados sea prácticamente igual, salvo por la operación a realizar con las matrices.
+\subsubsection{sum\_mat}
+\begin{lstlisting}[style=C++]
+PREDICATE(sum_mat, 3)
+{
+    std::unique_ptr<Matrix> m1(list_to_Matrix(A1));
+    std::unique_ptr<Matrix> m2(list_to_Matrix(A2));
+
+    if (m1.get() == nullptr || m2.get() == nullptr)
+    {
+        return FALSE;
+    }
+
+    //Get new matrix from the sum
+    
+    std::unique_ptr<Matrix> m_result(new Matrix(m1->getrows(), m1->getcols(), *m1 + *m2));
+
+    if (!m_result->isValid())
+    {
+        return FALSE;
+    }
+    
+    //C code to build the new list
+
+    term_t nlist = PL_new_term_ref();
+
+    matrix_to_list(nlist, m_result.get());
+    
+    //End of C code
+
+    //Unify result
+
+    PlTerm result(nlist);
+    
+    return A3 = result;
+}
+\end{lstlisting}
+\subsubsection{mult\_mat}
+\begin{lstlisting}[style=C++]
+PREDICATE(mult_mat_factor, 3)
+{
+    std::unique_ptr<Matrix> m(list_to_Matrix(A1));
+
+    if (m.get() == nullptr)
+    {
+        return FALSE;
+    }
+
+    double factor;
+
+    try
+    {
+        factor = (double) A2;
+    }
+    catch(...)
+    {
+        std::cout << "Second argument must be a double" << std::endl;
+        return FALSE;
+    }
+
+    std::unique_ptr<Matrix> m_result(new Matrix(m->getrows(), m->getcols(), *m * factor));
+
+    if (!m_result->isValid())
+    {
+        return FALSE;
+    }
+
+    //C code to build the new list
+
+    term_t nlist = PL_new_term_ref();
+
+    matrix_to_list(nlist, m_result.get());
+
+    //End of C code
+
+    //Unify result
+
+    PlTerm result(nlist);
+	
+    return A3 = result;
+}
+\end{lstlisting}
+\subsubsection{Matrix.hpp}
+A continuación se detalla el archivo de cabecera de la clase definida para almacenar una matriz. La implementación de cada una de las operaciones está contenida en el archivo Matrix.cpp.
+
+\begin{lstlisting}[style=C++]
+#include <iostream>
+#include <string>
+#include <vector>
+#include <memory>
+#include <limits>
+#include <math.h>
+
+class Matrix
+{
+public:
+    Matrix(int rows, int cols, std::vector<double> content);
+    Matrix(int rows, int cols);
+    
+    int getcols() const;
+    int getrows() const;
+    std::vector<double> getcontent() const;
+    
+    int addRow(std::vector<double> row);
+	
+	const double sum() const;
+	std::vector<double> transpose() const;
+	double determinant() const;
+	std::vector<double> inverse() const;
+
+	double adjoint(int row, int col) const;
+
+    double operator()(size_t i, size_t j) const;
+    std::vector<double> operator+(const Matrix m2) const;
+    std::vector<double> operator-(const Matrix m2) const;
+    std::vector<double> operator*(const double factor) const;
+    std::vector<double> operator*(const Matrix m2) const;
+
+    void getrow(int row, double retval[]) const;
+    
+    int isValid() const;
+	int isSquared() const;
+	int same_dimensions(const Matrix m2) const;
+
+	void print() const;
+private:
+    std::vector<double> content;
+    const int cols;
+    const int rows;
+    
+};
+\end{lstlisting}
+
+\subsubsection{Funciones auxiliares}
+A continuación se detallan las funciones que nos ayudan a convertir los tipos de Prolog en tipos de C++ y viceversa.
+
+Las siguientes dos funciones transformarán términos de Prolog en instancias de nuestra clase Matrix.
+\begin{lstlisting}[style=C++]
+Matrix* list_to_Matrix(PlTerm term)
+{
+    int rows = 0, cols = -1;
+    int i = 0, j;
+    std::vector<double> content;
+    try {
+        PlTail list(term);
+
+
+        PlTerm e1;
+
+        while (list.next(e1)) {
+            j = 0;
+            PlTerm e2;
+
+            try
+            {
+                PlTail list_row(e1);
+                while (list_row.next(e2)) {
+                    content.push_back((double) e2);
+                    j++;
+                }
+                //Check if matrix is well formed
+                if (cols != -1 && cols != j)
+                {
+                    throw std::runtime_error(0);
+                }
+            }
+            catch (PlTypeError &ex)
+            {
+                return list_to_matrix_one_row(term);
+            }
+            cols = j;
+            i++;
+        }
+    }
+    catch (...)
+    {
+        std::cout << "Invalid matrix" << std::endl;
+        return nullptr;
+    }
+
+    rows = i;
+    cols = j;
+
+    return new Matrix(rows, cols, content);
+}
+
+Matrix* list_to_matrix_one_row(PlTerm term)
+{
+    int rows = 0, cols = 0;
+    int j = 0;
+    std::vector<double> content;
+    try {
+        PlTail list(term);
+
+
+        PlTerm e1;
+
+        while (list.next(e1)) {
+            content.push_back((double) e1);
+            j++;
+        }
+    }
+    catch (...)
+    {
+        std::cout << "Invalid matrix" << std::endl;
+        return nullptr;
+    }
+
+    rows = 1;
+    cols = j;
+
+    return new Matrix(rows, cols, content);
+}
+\end{lstlisting}
+
+Es importante resaltar el empleo de la función $list\_to\_matrix\_one\_row$. Ésta se llama cuando nos salta una excepción en la función $list\_to\_matrix$ y sabemos que estamos en la primera fila. Ésto se debe a que, si el usuario introduce una matriz fila (o lo que es lo mismo, una lista de Prolog), al recorrer la lista estamos esperando a que cada uno de esos elementos sea a su vez otra lista, porque el caso general es el de una matriz bidimensional. Si estos elementos no son listas y son elementos atómicos, el constructor de $PlTail$ lanza una excepción de tipo, que controlamos para llamar a la función de construcción de matrices en caso de que sea una lista de una dimensión.
+
+La siguiente función realiza el proceso contrario: recibe una referencia a una matriz definida en C++ y la transforma en una lista de Prolog. Aquí es donde hemos tenido que utilizar llamadas a la interfaz de C.
+
+\begin{lstlisting}[style=C++]
+//Function written in C and using C interface
+//Receives a prolog list and a Matrix
+//Converts the reference of the list into the matrix
+int matrix_to_list(term_t list, Matrix* matrix)
+{
+    size_t rows = matrix->getrows();
+    size_t cols = matrix->getcols();
+
+    term_t lists = PL_new_term_refs(rows);
+
+    for (int i = 0; i < rows; i++)
+    {
+        double row_from_matrix[cols];
+        matrix->getrow(i, row_from_matrix);
+        if (!row_to_list(row_from_matrix, cols, lists + i))
+        {
+            return 0;
+        }
+    }
+
+    PL_put_nil(list);
+
+    for (int i = rows - 1; i >= 0; i--)
+    {
+        if(!PL_cons_list(list, lists + i, list))
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+//Function written in C and using C interface
+//Receives a matrix row and a prolog list, needs the length of the row
+//Converts the list into the matrix row
+int row_to_list(double *row, size_t length, term_t list)
+{
+    //Taken from matlog.c
+    if (!row)
+    {
+        return 0;
+    }
+    
+    PL_put_nil(list);
+    
+    term_t num = PL_new_term_ref();
+    
+    for (int i = length - 1; i >= 0; i--)
+    {
+        int res = PL_put_float(num, row[i]);
+        if (res != TRUE){
+            return 0;
+        }
+        
+        res = PL_cons_list(list, num, list);
+        if (res != TRUE)
+        {
+            return 0;
+        }
+    }
+    
+    return 1;
+}
+\end{lstlisting}
+
+\subsubsection{Sesión de ejemplo}
 
 \section{Referencias}
+\begin{flushleft}
+[1] \href{http://www.swi-prolog.org/pldoc/man?section=foreign}{Foreign Language interface to C}.
+
+[2] \href{http://www.swi-prolog.org/pldoc/doc_for?object=section('packages/pl2cpp.html')}{Foreign Language interface to C++}.\\
+\end{flushleft}
+
+
+
 \end{document}
 
 %%% Local Variables:

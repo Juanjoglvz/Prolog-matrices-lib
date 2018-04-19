@@ -79,9 +79,7 @@ PREDICATE(sum_mat, 3)
 
     PlTerm result(nlist);
     
-    A3 = result;
-    
-    return TRUE;
+    return A3 = result;
 }
 
 PREDICATE(res_mat, 3)
@@ -114,9 +112,7 @@ PREDICATE(res_mat, 3)
 
     PlTerm result(nlist);
 
-    A3 = result;
-
-    return TRUE;
+    return A3 = result;
 }
 
 PREDICATE(mult_mat_factor, 3)
@@ -158,10 +154,8 @@ PREDICATE(mult_mat_factor, 3)
     //Unify result
 
     PlTerm result(nlist);
-
-    A3 = result;
-
-    return TRUE;
+	
+    return A3 = result;
 }
 
 PREDICATE(mult_mat, 3)
@@ -194,9 +188,7 @@ PREDICATE(mult_mat, 3)
 
     PlTerm result(nlist);
 
-    A3 = result;
-
-    return TRUE;
+    return A3 = result;
 }
 
 PREDICATE(transpose_mat, 2)
@@ -227,9 +219,7 @@ PREDICATE(transpose_mat, 2)
 
     PlTerm result(nlist);
 
-    A2 = result;
-
-    return TRUE;
+    return A2 = result;
 }
 
 PREDICATE(determinant_mat, 2)
@@ -248,9 +238,7 @@ PREDICATE(determinant_mat, 2)
         return FALSE;
     }
 
-    A2 = factor;
-
-    return TRUE;
+    return A2 = factor;
 }
 
 PREDICATE(inv_mat, 2)
@@ -281,9 +269,7 @@ PREDICATE(inv_mat, 2)
 
     PlTerm result(nlist);
 
-    A2 = result;
-
-    return TRUE;
+    return A2 = result;
 }
 
 Matrix* list_to_Matrix(PlTerm term)
