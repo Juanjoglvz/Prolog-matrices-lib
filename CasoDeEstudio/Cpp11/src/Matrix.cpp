@@ -249,7 +249,6 @@ std::vector<double> Matrix::inverse() const
         return retval;
     }
 
-    std::cout << "Attempting to get comatrix with det " << det << std::endl;
 
     std::vector<double> cof;
 
@@ -265,14 +264,7 @@ std::vector<double> Matrix::inverse() const
 
     Matrix* foo = new Matrix(this->rows, this->rows, cof);
 
-    std::cout << "Attempting to get adjugate: " << std::endl;
-    foo->print();
-
     Matrix* foo2 = new Matrix(this->rows, this->rows, foo->transpose());
-
-    std::cout << "adjugate: " << std::endl;
-
-    foo2->print();
 
     return (*foo2) * (1/det);
 }
@@ -295,14 +287,10 @@ double Matrix::adjoint(int row, int col) const
             {
                 continue;
             }
-            std::cout << "pushing: " << (*this)(i,j) << std::endl;
             aux.push_back((*this)(i,j));
         }
     }
     Matrix* foo = new Matrix(this->rows - 1, this->cols - 1, aux);
-
-    std::cout << "got: " << std::endl;
-    foo->print();
 
     if ((row + col) % 2 == 0)
     {
