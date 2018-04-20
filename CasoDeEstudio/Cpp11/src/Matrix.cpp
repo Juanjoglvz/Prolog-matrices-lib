@@ -29,6 +29,7 @@ int Matrix::isValid() const
     return this->cols * this->rows == this->content.size();
 }
 
+//Adds one row at the end of the matrix
 int Matrix::addRow(std::vector<double> row)
 {
     if (row.size() != cols)
@@ -44,6 +45,7 @@ int Matrix::addRow(std::vector<double> row)
     return 1;
 }
 
+//Operator used to access elements in the matrix
 double Matrix::operator()(size_t i, size_t j) const
 {
     if (i >= this->rows || j >= this->cols)
@@ -53,7 +55,7 @@ double Matrix::operator()(size_t i, size_t j) const
     return content[i * cols + j];
 }
 
-
+//Operator to sum 2 matrix
 std::vector<double> Matrix::operator+(const Matrix m2) const
 {
     std::vector<double> retval;
@@ -76,6 +78,7 @@ std::vector<double> Matrix::operator+(const Matrix m2) const
     return retval;
 }
 
+//Operator to substract 2 matrix
 std::vector<double> Matrix::operator-(const Matrix m2) const
 {
     std::vector<double> retval;
@@ -98,6 +101,7 @@ std::vector<double> Matrix::operator-(const Matrix m2) const
     return retval;
 }
 
+//Operator to multiply the matrix by a factor
 std::vector<double> Matrix::operator*(const double factor) const
 {
     std::vector<double> retval;
@@ -113,6 +117,7 @@ std::vector<double> Matrix::operator*(const double factor) const
     return retval;
 }
 
+//Operator to multiply 2 matrix
 std::vector<double> Matrix::operator*(const Matrix m2) const
 {
     std::vector<double> retval;
@@ -142,6 +147,7 @@ std::vector<double> Matrix::operator*(const Matrix m2) const
     return retval;
 }
 
+//Returns the first row in the array passed by reference
 void Matrix::getrow(int row, double retval[]) const
 {
     for (int i = 0; i < cols; i++)
@@ -160,6 +166,7 @@ int Matrix::same_dimensions(const Matrix m2) const
 	return this->cols == m2.getcols() && this->rows == m2.getrows();
 }
 
+//Returns the sum of the elements of the matrix
 const double Matrix::sum() const
 {
 	double retval = 0;
@@ -172,6 +179,7 @@ const double Matrix::sum() const
 	return retval;
 }
 
+//Transposes the matrix
 std::vector<double> Matrix::transpose() const
 {
     std::vector<double> retval;
@@ -187,6 +195,7 @@ std::vector<double> Matrix::transpose() const
     return retval;
 }
 
+//Returns the determinant of the matrix if exists
 double Matrix::determinant() const
 {
     double retval = 0;
@@ -205,12 +214,12 @@ double Matrix::determinant() const
     {
         retval = (*this)(0, 0) * (*this)(1, 1) - (*this)(0, 1) * (*this)(1, 0);
     }
-    else
+    else //Apply Laplace expansion
     {
-        for (int p = 0; p < this->rows; p++)
+        for (int p = 0; p < this->rows; p++)//For every element in first row
         {
             std::vector<double> aux;
-            for (int i = 1; i < this->rows; i++)
+            for (int i = 1; i < this->rows; i++) 
             {
                 for (int j = 0; j < this->rows; j++)
                 {
@@ -233,6 +242,8 @@ double Matrix::determinant() const
 
 }
 
+//Returns the inverse of the matrix if exists
+//Computed by the analytic method of the matrix of cofactors.
 std::vector<double> Matrix::inverse() const
 {
     std::vector<double> retval;
@@ -269,6 +280,7 @@ std::vector<double> Matrix::inverse() const
     return (*foo2) * (1/det);
 }
 
+//Computes the adjoint of a nxm matrix where n,m>1
 double Matrix::adjoint(int row, int col) const
 {
     std::vector<double> aux;

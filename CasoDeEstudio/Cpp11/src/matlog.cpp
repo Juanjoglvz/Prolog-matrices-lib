@@ -92,7 +92,7 @@ PREDICATE(res_mat, 3)
         return FALSE;
     }
 
-    //Get new matrix from the sum
+    //Get new matrix from the substraction
 
     std::unique_ptr<Matrix> m_result(new Matrix(m1->getrows(), m1->getcols(), *m1 - *m2));
     if (!m_result->isValid())
@@ -126,7 +126,7 @@ PREDICATE(mult_mat_factor, 3)
 
     double factor;
 
-    try
+    try //Cast the second argument, and return FALSE if fails
     {
         factor = (double) A2;
     }
@@ -135,6 +135,7 @@ PREDICATE(mult_mat_factor, 3)
         std::cout << "Second argument must be a double" << std::endl;
         return FALSE;
     }
+	//Get new matrix from the Multiplication
 
     std::unique_ptr<Matrix> m_result(new Matrix(m->getrows(), m->getcols(), *m * factor));
 
@@ -168,7 +169,7 @@ PREDICATE(mult_mat, 3)
         return FALSE;
     }
 
-
+	//Get new matrix from the Multiplication
     std::unique_ptr<Matrix> m_result(new Matrix(m1->getrows(), m2->getcols(), *m1 * *m2));
 
     if (!m_result->isValid())
@@ -199,7 +200,8 @@ PREDICATE(transpose_mat, 2)
     {
         return FALSE;
     }
-
+	
+	//Get a new matrix result of transposing the one given
     std::unique_ptr<Matrix> m_result(new Matrix(m->getcols(), m->getrows(), m->transpose()));
 
     if (!m_result->isValid())
@@ -230,7 +232,7 @@ PREDICATE(determinant_mat, 2)
     {
         return FALSE;
     }
-
+	//Compute the determinant
     double factor = m->determinant();
 
     if (factor == (std::numeric_limits<double>::max() * -1))
@@ -249,7 +251,7 @@ PREDICATE(inv_mat, 2)
     {
         return FALSE;
     }
-
+	//Compute the inverse.
     std::unique_ptr<Matrix> m_result(new Matrix(m->getcols(), m->getrows(), m->inverse()));
 
     if (!m_result->isValid())
@@ -272,22 +274,23 @@ PREDICATE(inv_mat, 2)
     return A2 = result;
 }
 
+//Function to convert a Prolog list into a matrix
 Matrix* list_to_Matrix(PlTerm term)
 {
     int rows = 0, cols = -1;
     int i = 0, j;
     std::vector<double> content;
-    try {
+    try {//In case the PlTail constructor fails
         PlTail list(term);
 
-
+		
         PlTerm e1;
 
-        while (list.next(e1)) {
+        while (list.next(e1)) { //Iterate over the list
             j = 0;
             PlTerm e2;
 
-            try
+            try//In case the second PlTail constructor fails.
             {
                 PlTail list_row(e1);
                 while (list_row.next(e2)) {
@@ -297,11 +300,12 @@ Matrix* list_to_Matrix(PlTerm term)
                 //Check if matrix is well formed
                 if (cols != -1 && cols != j)
                 {
-                    throw std::runtime_error(0);
+                    throw std::runtime_error(0);//The inner catch wont catch this exception
                 }
             }
             catch (PlTypeError &ex)
             {
+				//In case the list is one dimensional, que call the function adapted to that case, and return its result
                 return list_to_matrix_one_row(term);
             }
             cols = j;
@@ -320,12 +324,13 @@ Matrix* list_to_Matrix(PlTerm term)
     return new Matrix(rows, cols, content);
 }
 
+//Function to convert a Prolog list into a matrix of one row
 Matrix* list_to_matrix_one_row(PlTerm term)
 {
     int rows = 0, cols = 0;
     int j = 0;
     std::vector<double> content;
-    try {
+    try {//In case the PlTail constructor fails
         PlTail list(term);
 
 
