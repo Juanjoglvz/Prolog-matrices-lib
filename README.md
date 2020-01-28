@@ -17,3 +17,4 @@ Imported from one of my other repositories.
 ## Compiling and linking
 Inside each folder there is a makefile. Inside that directory you can run make and a dynamic library will be generated.
 Simply import it from prolog using load_foreign_library/1.
+
